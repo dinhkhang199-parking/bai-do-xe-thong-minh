@@ -1,7 +1,8 @@
 import json
 import secrets
 import sqlite3
-from contextlib import closing
+from contextlib import closing, nullcontext
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -380,11 +381,11 @@ def delete_app_user(username: str, db_path=DB_PATH) -> bool:
         return cursor.rowcount > 0
 
 
-def append_audit_log(actor_username: str | None, actor_role: str | None, action: str, *, target_type: str | None = None, target_id: str | None = None, details_json: str | None = None, db_path=DB_PATH) -> bool:
-    with _connect(db_path) as conn:
+def append_audit_log(actor_username: str | None, actor_role: str | None, action: str, *, target_type: str | None = None, target_id: str | None = None, details_json: str | None = None, db_path=DB_PATH, connection=None) -> bool:
+    with (nullcontext(connection) if connection is not None else closing(_connect(db_path))) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO audit_logs(actor_username, actor_role, action, target_type, target_id, details_json) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO audit_logs(actor_username, actor_role, action, target_type, target_id, details_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 (actor_username or "").strip() or None,
                 (actor_role or "").strip() or None,
@@ -392,9 +393,11 @@ def append_audit_log(actor_username: str | None, actor_role: str | None, action:
                 (target_type or "").strip() or None,
                 (target_id or "").strip() or None,
                 details_json,
+                datetime.now(timezone.utc).isoformat(timespec='seconds'),
             ),
         )
-        conn.commit()
+        if connection is None:
+            conn.commit()
         return cursor.rowcount > 0
 
 
@@ -403,14 +406,14 @@ def fetch_audit_logs(db_path=DB_PATH) -> pd.DataFrame:
         return pd.read_sql_query("SELECT * FROM audit_logs ORDER BY created_at DESC, id DESC", conn)
 
 
-def append_parking_event(ticket_id: str | None, event_type: str, *, actor_username: str | None = None, actor_role: str | None = None, plate_text: str | None = None, confidence: float | None = None, source: str | None = None, details: dict | None = None, db_path=DB_PATH) -> bool:
+def append_parking_event(ticket_id: str | None, event_type: str, *, actor_username: str | None = None, actor_role: str | None = None, plate_text: str | None = None, confidence: float | None = None, source: str | None = None, details: dict | None = None, db_path=DB_PATH, connection=None) -> bool:
     details_json = json.dumps(details or {}, ensure_ascii=False) if details else None
-    with _connect(db_path) as conn:
+    with (nullcontext(connection) if connection is not None else closing(_connect(db_path))) as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO parking_events(ticket_id, event_type, actor_username, actor_role, plate_text, confidence, source, details_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO parking_events(ticket_id, event_type, actor_username, actor_role, plate_text, confidence, source, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 (ticket_id or "").strip() or None,
@@ -421,9 +424,11 @@ def append_parking_event(ticket_id: str | None, event_type: str, *, actor_userna
                 confidence,
                 source,
                 details_json,
+                datetime.now(timezone.utc).isoformat(timespec='seconds'),
             ),
         )
-        conn.commit()
+        if connection is None:
+            conn.commit()
         return cursor.rowcount > 0
 
 

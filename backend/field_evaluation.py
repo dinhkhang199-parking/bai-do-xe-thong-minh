@@ -2,6 +2,7 @@
 import csv
 from datetime import datetime
 import hashlib
+import io
 import math
 from pathlib import Path
 import statistics
@@ -18,14 +19,20 @@ def sha256(path):
         return hashlib.file_digest(handle, 'sha256').hexdigest()
 
 
-def load_manifest(path: Path) -> list[dict]:
+def load_manifest(path: Path, *, content: bytes | None = None) -> list[dict]:
     path = path.resolve()
-    with path.open(encoding='utf-8-sig', newline='') as handle:
+    with io.StringIO((path.read_bytes() if content is None else content).decode('utf-8-sig'), newline='') as handle:
         reader = csv.DictReader(handle)
+        if len(reader.fieldnames or ()) != len(set(reader.fieldnames or ())):
+            raise ValueError('Duplicate manifest columns are not allowed')
         missing = set(FIELDS) - set(reader.fieldnames or ())
         if missing:
             raise ValueError('Missing manifest columns: ' + ', '.join(sorted(missing)))
-        rows = [{k: (v or '').strip() for k, v in row.items() if k} for row in reader]
+        rows = []
+        for row in reader:
+            if None in row:
+                raise ValueError('Manifest row contains extra cells without column names')
+            rows.append({k: (v or '').strip() for k, v in row.items() if k})
     if not rows:
         raise ValueError('Manifest is empty; no accuracy can be measured.')
     ids, hashes, groups, plates = set(), set(), {}, {}

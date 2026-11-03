@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import uuid
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,6 +11,9 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from scripts.run_checks import write_summary
+
 FOLDERS = ('api', 'backend', 'frontend', 'integrations', 'models', 'scripts', 'tests', 'docs')
 
 
@@ -47,24 +51,60 @@ def copy_source(target: Path) -> dict[str, str]:
             for p in sorted(target.rglob('*')) if p.is_file()}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'work' / 'isolated-results')
     parser.add_argument('--coverage', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='its-checks-', ignore_cleanup_errors=True) as folder:
-        run = Path(folder)
-        manifest = copy_source(run / 'source')
-        (output / 'source-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf8')
-        env = isolated_environment(run / 'runtime')
-        env['COVERAGE_FILE'] = str(output / '.coverage')
-        command = [sys.executable, 'scripts/run_checks.py', '--output-dir', str(output)]
-        if args.coverage:
-            command.append('--coverage')
-        result = subprocess.run(command, cwd=run / 'source', env=env, timeout=900)
-    return result.returncode
+    lock = output / '.checks.lock'
+    try:
+        with lock.open('x', encoding='ascii') as file:
+            file.write(str(os.getpid()))
+    except FileExistsError:
+        print('Output already locked. Use a new --output-dir for this run.')
+        return 2
+    summary = output / 'checks-summary.json'
+    state = {'run': {'passed': False, 'state': 'preparing', 'id': uuid.uuid4().hex}}
+    code = 1
+    try:
+        write_summary(summary, state)
+        # Invalidate old evidence before copy/import/subprocess can fail.
+        for name in ('source-manifest.json','backend-junit.xml','.coverage','coverage.json','coverage.xml'):
+            (output/name).unlink(missing_ok=True)
+        with tempfile.TemporaryDirectory(prefix='its-checks-', ignore_cleanup_errors=True) as folder:
+            run = Path(folder)
+            manifest = copy_source(run / 'source')
+            env = isolated_environment(run / 'runtime')
+            reports = run / 'reports'
+            command = [sys.executable, 'scripts/run_checks.py', '--output-dir', str(reports)]
+            if args.coverage:
+                command.append('--coverage')
+            state['run']['state'] = 'running'
+            write_summary(summary, state)
+            result = subprocess.run(command, cwd=run / 'source', env=env, timeout=900)
+            current = json.loads((reports / 'checks-summary.json').read_text(encoding='utf8'))
+            if result.returncode or not current.get('run',{}).get('passed'):
+                current.setdefault('run',{}).update(passed=False, state='failed')
+            for name, expected in manifest.items():
+                if hashlib.sha256((run/'source'/name).read_bytes()).hexdigest() != expected:
+                    current['run'].update(passed=False,state='failed',reason='source_mutated_during_tests')
+                    break
+            for path in reports.iterdir():
+                if path.is_file() and (path.name.endswith('-output.txt') or path.name in {'backend-junit.xml','.coverage','coverage.json','coverage.xml'}):
+                    shutil.copy2(path, output / path.name)
+            (output / 'source-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf8')
+            state = current
+            code = 0 if state['run']['passed'] else 1
+    except (OSError, ValueError, subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
+        state['run'].update(passed=False, state='interrupted' if isinstance(exc,KeyboardInterrupt) else 'failed', reason=type(exc).__name__)
+    finally:
+        try:
+            write_summary(summary,state)
+        finally:
+            lock.unlink(missing_ok=True)
+    return code
 
 
 if __name__ == '__main__':

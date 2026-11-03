@@ -8,10 +8,10 @@ from backend.parking_metrics import ParkingKpis
 from backend.plate_format import normalize_generic_plate_text
 
 
-def _epoch(value):
+def _epoch(value,default_tz=timezone(timedelta(hours=7))):
     try:
         result=datetime.fromisoformat(str(value).strip())
-        if result.tzinfo is None:result=result.replace(tzinfo=timezone(timedelta(hours=7)))
+        if result.tzinfo is None:result=result.replace(tzinfo=default_tz)
         return result.timestamp()
     except (ValueError,TypeError,OverflowError):return None
 
@@ -29,6 +29,7 @@ def _page(table,where,params,order,limit,offset,columns='*',db_path=None):
     with closing(sqlite3.connect(db_path or DB_PATH,timeout=10)) as conn:
         conn.row_factory=sqlite3.Row
         conn.create_function('its_epoch',1,_epoch,deterministic=True)
+        conn.create_function('its_utc_epoch',1,lambda value:_epoch(value,timezone.utc),deterministic=True)
         conn.create_function('its_plate',1,normalize_generic_plate_text,deterministic=True)
         conn.execute('BEGIN')
         condition=' WHERE '+where if where else ''
@@ -68,12 +69,24 @@ def active_page(limit=None,offset=0,db_path=None,*,query=None,plate=None,status=
 
 
 def events_page(ticket_id=None,limit=100,offset=0,db_path=None):
-    return _page('parking_events','ticket_id=?' if ticket_id else '',[(ticket_id or '').strip()] if ticket_id else [],
-        'created_at DESC,id DESC',limit,offset,db_path=db_path)
+    return _explicit_history_times(_page('parking_events','ticket_id=?' if ticket_id else '',[(ticket_id or '').strip()] if ticket_id else [],
+        'its_utc_epoch(created_at) DESC,id DESC',limit,offset,db_path=db_path))
 
 
 def audit_page(limit=100,offset=0,db_path=None):
-    return _page('audit_logs','',[],'created_at DESC,id DESC',limit,offset,db_path=db_path)
+    return _explicit_history_times(_page('audit_logs','',[],'its_utc_epoch(created_at) DESC,id DESC',limit,offset,db_path=db_path))
+
+
+def _explicit_history_times(result):
+    # SQLite CURRENT_TIMESTAMP used by old event/audit writers is UTC, unlike old ticket times.
+    for row in result['items']:
+        try:
+            timestamp=datetime.fromisoformat(str(row.get('created_at')))
+            if timestamp.tzinfo is None:timestamp=timestamp.replace(tzinfo=timezone.utc)
+            row['created_at']=timestamp.isoformat()
+        except (TypeError,ValueError):
+            pass
+    return result
 
 
 def parking_kpis(db_path=None):

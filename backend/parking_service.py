@@ -1,5 +1,4 @@
 import json
-import logging
 import math
 import sqlite3
 from contextlib import contextmanager
@@ -8,11 +7,10 @@ from typing import Any
 from uuid import uuid4
 
 from backend.config import DB_PATH
-from backend.db import append_audit_log, append_parking_event
-from backend.billing import register_ticket, init_billing_schema, VEHICLE_TYPES, BillingError
+from backend.db import append_audit_log, append_parking_event, AUDIT_LOGS_SCHEMA, PARKING_EVENTS_SCHEMA
+from backend.billing import register_ticket, init_billing_schema, VEHICLE_TYPES, BillingError, LOCAL_TZ
 from backend.plate_format import format_confirmed_plate, normalize_generic_plate_text
 
-logger = logging.getLogger(__name__)
 
 
 ACTIVE_STATUS = "IN_PARKING"
@@ -31,11 +29,12 @@ LOW_CONFIDENCE_THRESHOLD = 0.55
 
 
 def create_ticket_id() -> str:
-    return f"T{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid4().hex[:16].upper()}"
+    return f"T{datetime.now(LOCAL_TZ).strftime('%Y%m%d%H%M%S')}{uuid4().hex[:16].upper()}"
 
 
 def _utc_like_timestamp() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Keep the legacy helper name, but never store an ambiguous host-local time.
+    return datetime.now(LOCAL_TZ).isoformat(timespec='seconds')
 
 
 def _sanitize_plate_text(plate_text: str | None) -> str:
@@ -103,20 +102,6 @@ def _actor_role(actor: Any | None) -> str | None:
     return getattr(actor, "role", None)
 
 
-def _safe_event(ticket_id: str | None, event_type: str, **kwargs):
-    try:
-        append_parking_event(ticket_id, event_type, **kwargs)
-    except Exception as exc:
-        logger.warning("append_parking_event failed for %s: %s", event_type, exc)
-
-
-def _safe_audit(actor_username: str | None, actor_role: str | None, action: str, **kwargs):
-    try:
-        append_audit_log(actor_username, actor_role, action, **kwargs)
-    except Exception as exc:
-        logger.warning("append_audit_log failed for %s: %s", action, exc)
-
-
 def _json_details(**details) -> str:
     return json.dumps({k: v for k, v in details.items() if v is not None}, ensure_ascii=False)
 
@@ -146,6 +131,9 @@ def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path:
 
     with _write_transaction() as conn:
         if not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ticket_billing'").fetchone():
+            # Compatibility for a legacy DB opened directly by the domain service.
+            conn.execute(AUDIT_LOGS_SCHEMA)
+            conn.execute(PARKING_EVENTS_SCHEMA)
             init_billing_schema(conn)
         cursor = conn.cursor()
         placeholders = ", ".join(["?"] * len(BLOCKING_ACTIVE_STATUSES))
@@ -209,8 +197,8 @@ def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path:
         cursor.execute(f"INSERT INTO parking_logs ({columns_sql}) VALUES ({placeholders})", tuple(insert_values))
         register_ticket(conn,ticket_id,vehicle_type,entry_time)
 
-    _safe_event(ticket_id, "VEHICLE_ENTRY", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "review_reason": review_reason}, db_path=DB_PATH)
-    _safe_audit(_actor_name(actor), _actor_role(actor), "vehicle.entry", target_type="ticket", target_id=ticket_id, details_json=_json_details(plate=clean_plate, review_reason=review_reason), db_path=DB_PATH)
+        append_parking_event(ticket_id, "VEHICLE_ENTRY", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "review_reason": review_reason}, connection=conn)
+        append_audit_log(_actor_name(actor), _actor_role(actor), "vehicle.entry", target_type="ticket", target_id=ticket_id, details_json=_json_details(plate=clean_plate, review_reason=review_reason), connection=conn)
     return {"success": True, "ticket_id": ticket_id, "plate_entry": clean_plate, "entry_time": entry_time, "status": ACTIVE_STATUS, "review_required": review_required, "review_reason": review_reason}
 
 
@@ -258,8 +246,8 @@ def vehicle_exit(ticket_id: str, plate_text: str, image_path: str | None = None,
         if cursor.rowcount == 0:
             return {"success": False, "message": "Vehicle already checked out"}
 
-    _safe_event(clean_ticket_id, "VEHICLE_EXIT", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "match_result": match_result, "review_reason": review_reason}, db_path=DB_PATH)
-    _safe_audit(_actor_name(actor), _actor_role(actor), "vehicle.exit", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(plate_entry=plate_entry, plate_exit=clean_plate, match_result=match_result, status=new_status), db_path=DB_PATH)
+        append_parking_event(clean_ticket_id, "VEHICLE_EXIT", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "match_result": match_result, "review_reason": review_reason}, connection=conn)
+        append_audit_log(_actor_name(actor), _actor_role(actor), "vehicle.exit", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(plate_entry=plate_entry, plate_exit=clean_plate, match_result=match_result, status=new_status), connection=conn)
     return {"success": True, "ticket_id": clean_ticket_id, "plate_entry": plate_entry, "plate_exit": clean_plate, "exit_time": exit_time, "match_result": match_result, "status": new_status, "review_required": review_required, "review_reason": review_reason}
 
 
@@ -287,8 +275,8 @@ def resolve_review_ticket(ticket_id: str, resolution: str, actor: Any | None = N
             """,
             (new_status, match_result, 0 if new_status == COMPLETED_STATUS else 1, _actor_name(actor), resolved_at, (note or "").strip() or None, clean_ticket_id, NEEDS_REVIEW_STATUS),
         )
-    _safe_event(clean_ticket_id, "REVIEW_RESOLVED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"resolution": clean_resolution, "note": note}, db_path=DB_PATH)
-    _safe_audit(_actor_name(actor), _actor_role(actor), "ticket.resolve", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(resolution=clean_resolution, note=note), db_path=DB_PATH)
+        append_parking_event(clean_ticket_id, "REVIEW_RESOLVED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"resolution": clean_resolution, "note": note}, connection=conn)
+        append_audit_log(_actor_name(actor), _actor_role(actor), "ticket.resolve", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(resolution=clean_resolution, note=note), connection=conn)
     return {"success": True, "ticket_id": clean_ticket_id, "status": new_status, "match_result": match_result, "resolved_at": resolved_at}
 
 
@@ -308,8 +296,8 @@ def cancel_ticket(ticket_id: str, actor: Any | None = None, reason: str | None =
             "UPDATE parking_logs SET status = ?, cancel_reason = ?, review_required = 0 WHERE ticket_id = ?",
             (CANCELLED_STATUS, clean_reason, clean_ticket_id),
         )
-    _safe_event(clean_ticket_id, "TICKET_CANCELLED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"reason": clean_reason}, db_path=DB_PATH)
-    _safe_audit(_actor_name(actor), _actor_role(actor), "ticket.cancel", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(reason=clean_reason), db_path=DB_PATH)
+        append_parking_event(clean_ticket_id, "TICKET_CANCELLED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"reason": clean_reason}, connection=conn)
+        append_audit_log(_actor_name(actor), _actor_role(actor), "ticket.cancel", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(reason=clean_reason), connection=conn)
     return {"success": True, "ticket_id": clean_ticket_id, "status": CANCELLED_STATUS}
 
 
