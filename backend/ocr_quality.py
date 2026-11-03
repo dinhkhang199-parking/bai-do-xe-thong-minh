@@ -55,8 +55,8 @@ def is_full_vn_plate_formatted(formatted_text: str) -> bool:
 def assess_ocr_quality(text: str, confidence: float) -> OcrQualityAssessment:
     raw_text = (text or "").upper().strip()
     plate_type = classify_plate_type(text)
-    formatted = format_plate_by_type(text, plate_type)
-    normalized = normalize_plate_text(formatted)
+    formatted = format_confirmed_plate(text) or raw_text
+    normalized = normalize_generic_plate_text(formatted)
     conf = clamp_confidence(confidence)
     compact_formatted = "".join(ch for ch in formatted.upper() if ch.isalnum())
     raw_alpha_count = sum(ch.isalpha() for ch in raw_text)

@@ -40,20 +40,27 @@ Do not update ticket status directly from UI/API code.
 Primary OCR:
 
 ```text
-9Router -> cx/gpt-5.5 Vision
+9Router / OpenAI-compatible provider -> runtime-configured ITS_OPENAI_VISION_MODEL
 ```
 
 Fallbacks:
 
 - fast-alpr/EasyOCR.
 - PaddleOCR.
-- local format normalization.
+- lossless identity formatting (no automatic B/8 or O/0 repair).
 
 OCR result policy:
 
 - `is_usable` means format usable, not guaranteed true.
 - disagreement must be surfaced, not hidden.
 - manual override should be recorded.
+- A usable vision reading receives one fresh image-only verification request;
+  exact identity agreement is required. No retry rescues an initial abstention.
+- Verification failure, timeout or disagreement disables autofill. Keep human
+  confirmation even after agreement; two requests to one model are correlated.
+- Local OCR keeps differing candidates, uses the weaker row's confidence when
+  combining rows, and never adds confidence for matching a plate pattern.
+- See `../docs/OCR_ACCURACY.md` for budgets, diagnostic limits and deployment.
 
 ## Security Policy
 

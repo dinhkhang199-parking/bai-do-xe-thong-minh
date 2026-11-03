@@ -29,9 +29,44 @@ def _find_boxes(image):
     if detector is None:return []
     import numpy as np
     frame=np.array(image.convert("RGB"))[:,:,::-1].copy()
+    regions = [(0, 0, image.width, image.height)]
+    # The 384px detector can lose a small plate after full-frame downsampling.
+    # Four overlapping tiles preserve detail, including plates near tile seams.
+    # Keep the whole-frame pass to retain context and count other vehicles.
+    if max(image.size) >= 1200:
+        tile_w, tile_h = round(image.width * .6), round(image.height * .6)
+        regions += [(x, y, x + tile_w, y + tile_h)
+                    for y in (0, image.height - tile_h)
+                    for x in (0, image.width - tile_w)]
+    boxes = []
     with _LOCK:
-        detections=detector.predict(frame)
-    return [tuple(item.bounding_box.clamp(image.width,image.height)) for item in detections if item.confidence>=.5]
+        for left, top, right, bottom in regions:
+            for item in detector.predict(frame[top:bottom, left:right]):
+                if item.confidence < .5:
+                    continue
+                x1, y1, x2, y2 = item.bounding_box.clamp(right-left, bottom-top)
+                if x2 > x1 and y2 > y1:
+                    boxes.append((x1+left, y1+top, x2+left, y2+top))
+    return _merge_duplicate_boxes(boxes)
+
+
+def _merge_duplicate_boxes(boxes):
+    """Suppress overlapping observations of the same plate, never join neighbors."""
+    kept = []
+    for box in sorted(boxes, key=lambda b: (b[2]-b[0])*(b[3]-b[1]), reverse=True):
+        area = (box[2]-box[0])*(box[3]-box[1])
+        if area <= 0:
+            continue
+        duplicate = False
+        for other in kept:
+            overlap = max(0, min(box[2],other[2])-max(box[0],other[0])) * max(0, min(box[3],other[3])-max(box[1],other[1]))
+            other_area = (other[2]-other[0])*(other[3]-other[1])
+            if overlap / (area+other_area-overlap) >= .4 or overlap / min(area,other_area) >= .85:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(box)
+    return kept
 
 
 def crop_views(image_path,finder=None):

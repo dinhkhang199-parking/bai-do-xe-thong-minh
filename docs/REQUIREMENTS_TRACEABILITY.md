@@ -9,7 +9,7 @@ Mỗi test dưới đây phải chạy thành công trên cùng source manifest 
 | FR-01 | Đăng nhập; quyền viewer không ghi dữ liệu | `/auth/login`, `backend/auth.py` | `tests/test_api_auth_jwt.py`, `tests/test_api_contract.py` |
 | FR-02 | Khóa/đổi quyền/xóa user làm phiên cũ hết hiệu lực | `/admin/users` | `tests/test_session_security.py` |
 | FR-03 | Nhận ảnh hợp lệ, giới hạn 10 MB; không nhận ảnh hỏng | `/ocr`, `backend/storage.py` | `tests/test_storage_resize.py`, `tests/test_extended_regressions.py` |
-| FR-04 | Nhiều biển/bất đồng/NaN không tự xác nhận | `backend/alpr_service.py`, `backend/openai_vision_adapter.py` | `tests/test_ocr_edge_cases.py`, `tests/test_vision_auto_fusion.py` |
+| FR-04 | Nhiều biển/bất đồng/NaN không tự xác nhận; kiểm chứng vision và giữ nguyên định danh local | `backend/alpr_service.py`, `backend/openai_vision_adapter.py` | `tests/test_ocr_edge_cases.py`, `tests/test_vision_auto_fusion.py`, `tests/test_ocr_verification.py`, `tests/test_local_ocr_evidence.py` |
 | FR-05 | Kết quả quét thuộc đúng ảnh và người dùng; không quét lại khi xác nhận | `/ocr`, `backend/scan_cache.py` | `tests/test_scan_reuse.py` |
 | FR-06 | Một biển chỉ có một vé đang mở, kể cả yêu cầu đồng thời | `/vehicle/entry` | `tests/test_concurrent_lifecycle.py` |
 | FR-07 | Biển xe ra khớp chính xác; B/8 là hai định danh | `/vehicle/exit` | `tests/test_review_fixes.py`, `tests/test_parking_service.py` |
