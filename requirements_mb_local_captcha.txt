@@ -1,0 +1,5 @@
+# Optional: install in the Python environment used by scripts/start_mb_bridge.py.
+# The supplied MB ONNX model is included at models/mb-captcha.onnx.
+numpy>=2.3,<3
+onnxruntime>=1.24,<2
+Pillow>=10

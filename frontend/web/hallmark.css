@@ -1,0 +1,87 @@
+/* Hallmark · checked: 2026-10-29 · genre: playful (inferred)
+ * built: the project · redesign: polish · scope: app · v2.0.0 */
+:root {
+  --desk-panel: #15273e;
+  --desk-hover: #203a52;
+  --desk-rule: #3b5068;
+  --desk-ink: #eaf2fc;
+  --desk-clear: transparent;
+  --desk-heart: #bb6484;
+}
+:root[data-theme="light"] {
+  --desk-panel: #fffaf3;
+  --desk-hover: #f9eddf;
+  --desk-rule: #dfc9c5;
+  --desk-ink: #62475f;
+}
+html, body { overflow-x: clip; }
+h1, h2, h3 { min-width: 0; overflow-wrap: break-word; text-wrap: balance; }
+:root[data-theme] :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+  transition: none;
+}
+:root[data-theme] button:active:not(:disabled) { transform: translateY(1px); }
+:root[data-theme] button:disabled { cursor: not-allowed; opacity: .55; }
+:root[data-theme] .stats-grid {
+  gap: 0;
+  border: 1px solid var(--desk-rule);
+  border-radius: 14px;
+  background: var(--desk-panel);
+  overflow: hidden;
+}
+:root[data-theme] .stats-grid .stat {
+  background: var(--desk-clear);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+:root[data-theme] .stats-grid .stat + .stat { border-left: 1px solid var(--desk-rule); }
+:root[data-theme] .stat-value {
+  color: var(--desk-ink);
+  font-family: var(--font);
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+:root[data-theme] .stat-icon {
+  background: var(--desk-clear);
+  color: var(--ui-muted);
+  border: 0;
+  box-shadow: none;
+}
+:root[data-theme] .stat::after,
+.app .winter-label,
+.sidebar-winter .winter-caption,
+.system-card .status-dot { display: none; }
+:root[data-theme] .quick-action,
+:root[data-theme] .dashboard-grid > .card {
+  background: var(--desk-panel);
+  border-color: var(--desk-rule);
+  box-shadow: none;
+}
+:root[data-theme] .quick-action:hover {
+  background: var(--desk-hover);
+  border-color: var(--ui-focus);
+  box-shadow: none;
+  transform: none;
+}
+:root[data-theme] .plate {
+  color: var(--desk-ink);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.topbar-project { letter-spacing: 0; }
+.spider-hug-heart svg { width: 1em; height: 1em; fill: var(--desk-heart); }
+@media (max-width: 1000px) {
+  :root[data-theme] .stats-grid .stat:nth-child(3) { border-left: 0; }
+  :root[data-theme] .stats-grid .stat:nth-child(n+3) { border-top: 1px solid var(--desk-rule); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] button:active:not(:disabled) { transform: none; }
+}

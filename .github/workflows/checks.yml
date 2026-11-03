@@ -1,0 +1,38 @@
+name: ITS academic regression
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: requirements/windows-py314.lock.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes -r requirements/windows-py314.lock.txt
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Regression and branch coverage
+        run: python scripts/isolated_checks.py --coverage --output-dir work/ci-results
+      - name: Fresh-process offline demo acceptance
+        run: python scripts/demo_acceptance.py --output work/demo-acceptance.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: its-test-evidence
+          path: |
+            work/ci-results/
+            work/demo-acceptance.json
+          include-hidden-files: false

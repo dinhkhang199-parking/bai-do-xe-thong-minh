@@ -1,0 +1,66 @@
+"""Optional local plate crops for vision requests; never downloads detector weights."""
+from functools import lru_cache
+import io
+import os
+from pathlib import Path
+import threading
+
+from PIL import Image,ImageOps,ImageEnhance,ImageFilter
+
+_LOCK=threading.Lock()
+
+
+@lru_cache(maxsize=1)
+def _detector():
+    path=Path(os.getenv("ITS_PLATE_DETECTOR_PATH") or Path.home()/".cache/open-image-models/yolo-v9-t-384-license-plate-end2end/yolo-v9-t-384-license-plates-end2end.onnx")
+    if not path.is_file():
+        return None
+    try:
+        import onnxruntime as ort
+        from open_image_models.detection.core.yolo_v9.inference import YoloV9Detector
+        options=ort.SessionOptions();options.intra_op_num_threads=2;options.inter_op_num_threads=1
+        return YoloV9Detector(path,["plate"],providers=["CPUExecutionProvider"],sess_options=options)
+    except Exception:
+        return None
+
+
+def _find_boxes(image):
+    detector=_detector()
+    if detector is None:return []
+    import numpy as np
+    frame=np.array(image.convert("RGB"))[:,:,::-1].copy()
+    with _LOCK:
+        detections=detector.predict(frame)
+    return [tuple(item.bounding_box.clamp(image.width,image.height)) for item in detections if item.confidence>=.5]
+
+
+def crop_views(image_path,finder=None):
+    """Return raw and gently enhanced views only for an unambiguous single ROI."""
+    try:
+        with Image.open(image_path) as original:
+            if original.width*original.height>20000000:return []
+            image=ImageOps.exif_transpose(original).convert("RGB")
+        boxes=(finder or _find_boxes)(image)
+        if len(boxes)!=1:return []
+        x1,y1,x2,y2=boxes[0]
+        if x2-x1<12 or y2-y1<8:return []
+        dx=max(2,round((x2-x1)*.10));dy=max(2,round((y2-y1)*.12))
+        crop=image.crop((max(0,x1-dx),max(0,y1-dy),min(image.width,x2+dx),min(image.height,y2+dy)))
+        scale=min(4.,1200/max(crop.size))
+        if scale!=1:
+            crop=crop.resize((max(1,round(crop.width*scale)),max(1,round(crop.height*scale))),Image.Resampling.LANCZOS)
+        enhanced=ImageEnhance.Contrast(ImageOps.grayscale(crop)).enhance(1.4).filter(ImageFilter.UnsharpMask(radius=1.2,percent=120,threshold=3)).convert("RGB")
+        return [("Ảnh cắt phóng to vùng biển số từ ảnh gốc",crop),
+                ("Cùng vùng biển số, tăng tương phản để đối chiếu",enhanced)]
+    except Exception:
+        # Full-frame vision remains usable when the optional local detector fails.
+        return []
+
+
+def encode_crop_views(image_path):
+    import base64
+    result=[]
+    for label,image in crop_views(image_path):
+        stream=io.BytesIO();image.save(stream,format="JPEG",quality=95)
+        result.append((label,base64.b64encode(stream.getvalue()).decode("ascii")))
+    return result

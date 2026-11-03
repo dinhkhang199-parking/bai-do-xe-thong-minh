@@ -1,0 +1,37 @@
+[
+  {
+    "path": "models/mb-captcha.onnx",
+    "bytes": 1890777,
+    "sha256": "cb8a9e4b0602a2e097816495e91096250fc66149b22d615edc522b5362bcc48e",
+    "origin": "supplied project archive; see THIRD_PARTY_AND_CONTRIBUTIONS.md",
+    "trained_by_project": "not established"
+  },
+  {
+    "path": "models/external/sourudra-another_model.pt",
+    "bytes": 5765924,
+    "sha256": "e3a8882cbbbcb3fb544e39c10de1d1b221882507cc2a8888922aa8b414a76de6",
+    "origin": "supplied project archive; see THIRD_PARTY_AND_CONTRIBUTIONS.md",
+    "trained_by_project": "not established"
+  },
+  {
+    "path": "models/external/sourudra-model1.pt",
+    "bytes": 6267128,
+    "sha256": "f12be8ba9b5ac7ffafb6c1e4967d283e21f4c74c3afdaff54129b39c9b6e0e7a",
+    "origin": "supplied project archive; see THIRD_PARTY_AND_CONTRIBUTIONS.md",
+    "trained_by_project": "not established"
+  },
+  {
+    "path": "models/external/sourudra-model2.pt",
+    "bytes": 6268067,
+    "sha256": "f7a9ea82a437bc4a7d83b2b44e5c4e1db63cb3897645f218975d40239cef7fe7",
+    "origin": "supplied project archive; see THIRD_PARTY_AND_CONTRIBUTIONS.md",
+    "trained_by_project": "not established"
+  },
+  {
+    "path": "integrations/person1/plate_detection_phase1/license_plate.pt",
+    "bytes": 5465235,
+    "sha256": "0aec75976c56eb6f26dfb274c430620ec65137915ff1ae47c3a48c7af8afb7b2",
+    "origin": "supplied project archive; see THIRD_PARTY_AND_CONTRIBUTIONS.md",
+    "trained_by_project": "not established"
+  }
+]

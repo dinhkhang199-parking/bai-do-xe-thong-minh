@@ -1,0 +1,10 @@
+.runtime-notice {
+  color: inherit;
+  font: 400 .875rem/1.6 var(--font);
+  overflow-wrap: anywhere;
+  padding-block: .75rem;
+  border-block: 1px solid currentColor;
+}
+.runtime-notice strong { font-weight: 700; }
+.login-card .runtime-notice { margin-block: 0 1.25rem; }
+.main > .runtime-notice { margin: 1rem clamp(1rem, 3vw, 2rem) 0; }

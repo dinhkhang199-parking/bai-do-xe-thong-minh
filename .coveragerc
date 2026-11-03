@@ -1,0 +1,11 @@
+[run]
+branch = True
+source = api,backend,integrations
+omit =
+    integrations/mbbank_lib/*
+    integrations/reference/*
+
+[report]
+show_missing = True
+skip_empty = True
+precision = 2
