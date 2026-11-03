@@ -77,6 +77,19 @@ def wilson(successes, total):
     return [max(0., center-radius), min(1., center+radius)]
 
 
+def prediction_from_ocr(sample_id: str, ocr: dict, latency_ms: float) -> dict:
+    """Do not credit a missing/disabled engine as a successful negative sample."""
+    engine = ocr.get('ocr_engine') or ocr.get('engine')
+    unavailable = not engine or engine in {'unavailable', 'demo-offline'}
+    failure = 'EngineUnavailable' if unavailable else ('PipelineError' if ocr.get('error') else None)
+    return {
+        'sample_id': sample_id, 'predicted_plate': ocr.get('text') or '',
+        'accepted': not failure and ocr.get('is_usable') is True and not bool(ocr.get('ambiguous') or ocr.get('ocr_disagreement')),
+        'latency_ms': latency_ms, 'engine': engine or 'unknown', 'error': failure,
+        'provider_degraded': ocr.get('ai_status') == 'unavailable',
+    }
+
+
 def evaluate_predictions(manifest: list[dict], predictions: list[dict], *, split='test') -> dict:
     rows = [row for row in manifest if row['split'] == split]
     if not rows:
@@ -109,6 +122,7 @@ def evaluate_predictions(manifest: list[dict], predictions: list[dict], *, split
             'predicted_plate': predicted, 'accepted': accepted, 'exact_plate_match': match,
             'false_accept': accepted and not match, 'latency_ms': latency,
             'error': prediction.get('error'), 'engine': prediction.get('engine', 'unknown'),
+            'provider_degraded': prediction.get('provider_degraded') is True,
             'correct_decision': not prediction.get('error') and (match and accepted if readable else not accepted),
         })
 
@@ -125,6 +139,7 @@ def evaluate_predictions(manifest: list[dict], predictions: list[dict], *, split
             'samples': n, 'groups': len({x['group_id'] for x in items}), 'readable': readable,
             'expected_abstentions': negative, 'accepted': accepted, 'false_accepts': wrong,
             'errors': sum(bool(x['error']) for x in items),
+            'provider_degraded_samples': sum(x['provider_degraded'] for x in items),
             'exact_plate_accuracy': exact/readable if readable else None,
             'exact_plate_wilson95': wilson(exact, readable),
             'false_accept_rate_all': wrong/n,

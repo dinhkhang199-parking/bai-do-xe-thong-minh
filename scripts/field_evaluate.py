@@ -11,7 +11,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend.field_evaluation import FIELDS, evaluate_predictions, load_manifest, sha256
+from backend.field_evaluation import FIELDS, evaluate_predictions, load_manifest, prediction_from_ocr, sha256
 
 
 def main():
@@ -71,9 +71,8 @@ def main():
                 try:
                     result = process_plate_image(row['_image'])
                     ocr = result.ocr
-                    predictions.append({'sample_id': row['sample_id'], 'predicted_plate': result.plate_text,
-                        'accepted': ocr.get('is_usable') is True and not bool(ocr.get('ambiguous') or ocr.get('ocr_disagreement')),
-                        'latency_ms': (time.perf_counter()-started)*1000, 'engine': ocr.get('ocr_engine')})
+                    predictions.append(prediction_from_ocr(row['sample_id'], {**ocr, 'text': result.plate_text},
+                                                           (time.perf_counter()-started)*1000))
                 except Exception as exc:
                     predictions.append({'sample_id': row['sample_id'], 'predicted_plate': '', 'accepted': False,
                                         'latency_ms': (time.perf_counter()-started)*1000, 'error': type(exc).__name__})

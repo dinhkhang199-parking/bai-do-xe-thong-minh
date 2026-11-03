@@ -49,6 +49,7 @@ Lệnh chạy gọi `process_plate_image`, cùng điểm vào nghiệp vụ vớ
 - **False accept:** prediction được accepted nhưng sai biển hoặc mẫu yêu cầu abstain. Báo theo toàn bộ mẫu và riêng số accepted; mẫu lỗi provider không tự được coi là abstain thành công.
 - **Abstention rate:** không accepted / tổng số mẫu; **safe abstention rate** chỉ tính các mẫu expected abstain được từ chối mà không lỗi pipeline.
 - **Correct decision rate:** read phải đúng và accepted; abstain phải từ chối, không exception.
+- Engine thiếu/`unavailable`/demo ngoại tuyến là lỗi đo, không được ghi nhận là abstain đúng. Provider mất kết nối nhưng fallback local vẫn hoạt động được ghi riêng ở `provider_degraded_samples`; kết quả có thể đúng nhưng không chứng minh provider đã chạy.
 - **Latency:** thời gian từng lần gọi gồm lỗi, P50/P95 nearest-rank/max; lần đầu có thể chứa cold start. Không lấy thời gian đọc CSV làm latency OCR.
 - **Wilson 95%:** khoảng cho exact accuracy, có giả định độc lập; ảnh cùng nhóm có tương quan nên khoảng này chỉ tham khảo, không làm tăng số cảnh độc lập.
 

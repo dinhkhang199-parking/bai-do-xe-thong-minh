@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from backend.benchmarking import compute_benchmark_metrics, load_benchmark_rows, run_static_benchmark
-from backend.field_evaluation import FIELDS, evaluate_predictions, load_manifest, sha256
+from backend.field_evaluation import FIELDS, evaluate_predictions, load_manifest, prediction_from_ocr, sha256
 from backend.ocr_analysis import analyze_ocr_rows
 from scripts.benchmark_common import normalize
 from scripts.run_benchmark import write_reports
@@ -115,3 +115,24 @@ def test_field_counts_wrong_accepts_abstention_errors_and_latency(tmp_path):
     predictions[0]['accepted'] = 'false'
     with pytest.raises(ValueError, match='boolean'):
         evaluate_predictions(manifest, predictions)
+
+
+@pytest.mark.parametrize('engine', [None, 'unavailable', 'demo-offline'])
+def test_missing_engine_cannot_earn_safe_abstention_credit(tmp_path, engine):
+    rows = manifest_fixture(tmp_path, 1)
+    rows[0].update(expected_action='abstain', expected_plate='')
+    manifest = load_manifest(save_manifest(tmp_path, rows))
+    prediction = prediction_from_ocr('S0', {'ocr_engine': engine, 'text': '', 'is_usable': False}, 10)
+    summary = evaluate_predictions(manifest, [prediction])['summary']
+    assert summary['errors'] == 1
+    assert summary['safe_abstention_rate'] == summary['correct_decision_rate'] == 0
+
+
+def test_provider_outage_is_recorded_even_when_local_fallback_succeeds(tmp_path):
+    rows = manifest_fixture(tmp_path, 1)
+    manifest = load_manifest(save_manifest(tmp_path, rows))
+    prediction = prediction_from_ocr('S0', {'text': '59-B1 123.40', 'is_usable': True,
+                                          'ocr_engine': 'fast-alpr-easyocr', 'ai_status': 'unavailable'}, 10)
+    summary = evaluate_predictions(manifest, [prediction])['summary']
+    assert summary['errors'] == 0 and summary['provider_degraded_samples'] == 1
+    assert summary['correct_decision_rate'] == 1
