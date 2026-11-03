@@ -91,6 +91,9 @@ def test_ai_uncertainty_overrides_readable_flag():
 
 def test_active_ai_snapshot_controls_key_endpoint_model_and_protocol(monkeypatch, tmp_path):
     settings = AISettings(True, True, "runtime-test-key", "http://127.0.0.1:9999/v1", "cx/gpt-6-sol", "chat", 17)
+    clock = iter((100.0, 102.0, 103.0))
+    monkeypatch.setattr(vision.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(vision, "OPENAI_VISION_VERIFY", False)
     monkeypatch.setattr(vision, "active_ai_settings", lambda: settings)
     monkeypatch.setattr(vision, "ENABLE_OPENAI_VISION", False)
     monkeypatch.setattr(vision, "OPENAI_API_KEY", "old-test-key")
@@ -110,7 +113,7 @@ def test_active_ai_snapshot_controls_key_endpoint_model_and_protocol(monkeypatch
     assert captured["client"]["api_key"] == "runtime-test-key"
     assert captured["client"]["base_url"] == settings.base_url
     assert captured["request"]["model"] == settings.model
-    assert captured["request"]["timeout"] == 17
+    assert captured["request"]["timeout"] == 15  # Two seconds of image preparation share the budget.
 
 
 def test_active_ai_key_is_redacted_from_provider_errors(monkeypatch):

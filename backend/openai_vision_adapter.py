@@ -13,6 +13,7 @@ from backend.config import (
     OPENAI_API_MODE,
     OPENAI_BASE_URL,
     OPENAI_TIMEOUT_SECONDS,
+    OPENAI_VISION_VERIFY,
     OPENAI_VISION_MODEL,
 )
 from backend.logging_config import get_logger
@@ -86,6 +87,33 @@ VERIFY_PROMPT = PLATE_PROMPT + (
     "và số ký tự mỗi hàng. Không suy ra ký tự bị che từ mẫu biển thường gặp. "
     "Đặc biệt kiểm tra xem ảnh toàn cảnh có biển thứ hai dù nhỏ hoặc mờ không."
 )
+
+FAST_PLATE_PROMPT = (
+    "Đọc nguyên văn biển số xe, trả JSON đúng schema. Ảnh đầu là toàn cảnh; "
+    "ảnh sau chỉ phóng to cùng biển, không phải xe khác. Đếm biển vật lý trong toàn cảnh. "
+    "Đọc trái sang phải, hàng trên rồi hàng dưới. Giữ đúng B/8, O/0, I/1, S/5, Z/2; "
+    "không đoán, không sửa ký tự để khớp mẫu. Chỉ readable=true khi đủ mọi ký tự và "
+    "đúng một biển. Nếu mờ/che/lóa hoặc nhiều biển: readable=false, ghi image_issues "
+    "và uncertain_characters; không suy ra phần thiếu. plate_text chỉ gồm chữ/số "
+    "đọc chắc, để rỗng nếu chưa đủ. layout: one_line/two_line; vehicle_type: "
+    "motorcycle/car/unknown. notes để rỗng nếu rõ, nếu có vấn đề chỉ ghi một câu ngắn."
+)
+
+
+def _verification_enabled(settings=None):
+    return bool(getattr(settings, "verify_readings", OPENAI_VISION_VERIFY))
+
+
+def _reasoning_options(model, settings=None, *, chat=False):
+    # Only send these options to the configured model family already supported
+    # by the router. Other providers/models keep their own defaults.
+    if model.rsplit("/", 1)[-1] != "gpt-6.1-sol":
+        return {}
+    verify = _verification_enabled(settings)
+    effort, tokens = ("high", 6144) if verify else ("low", 2048)
+    if chat:
+        return {"reasoning_effort": effort, "max_completion_tokens": tokens}
+    return {"reasoning": {"effort": effort}, "max_output_tokens": tokens}
 
 
 def _redact_secrets(message) -> str:
@@ -269,7 +297,7 @@ def _vision_content(image_b64,chat=False, prompt=PLATE_PROMPT):
 
 def _responses_request(client, image_b64, settings=None, *, prompt=PLATE_PROMPT, timeout=None) -> str:
     model=getattr(settings,"model",OPENAI_VISION_MODEL)
-    options={"reasoning":{"effort":"high"},"max_output_tokens":6144} if model.rsplit("/",1)[-1]=="gpt-6.1-sol" else {}
+    options = _reasoning_options(model, settings)
     response = client.responses.create(
         model=model,
         store=False,
@@ -301,7 +329,7 @@ def _responses_request(client, image_b64, settings=None, *, prompt=PLATE_PROMPT,
 
 def _chat_request(client, image_b64: str, settings=None, *, prompt=PLATE_PROMPT, timeout=None) -> str:
     model=getattr(settings,"model",OPENAI_VISION_MODEL)
-    options={"reasoning_effort":"high","max_completion_tokens":6144} if model.rsplit("/",1)[-1]=="gpt-6.1-sol" else {}
+    options = _reasoning_options(model, settings, chat=True)
     response = client.chat.completions.create(
         model=model,
         response_format={
@@ -346,11 +374,12 @@ def run_openai_vision(image_path: str) -> dict:
         raise RuntimeError("OPENAI_API_KEY is not configured")
 
     started = time.monotonic()
+    verify = _verification_enabled(settings)
     request_timeout = max(0.1, min(float(getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS)), MAX_READING_BUDGET_SECONDS))
-    deadline = started + min(request_timeout * 2, MAX_READING_BUDGET_SECONDS)
+    deadline = started + min(request_timeout * (2 if verify else 1), MAX_READING_BUDGET_SECONDS)
     image_b64 = _encode_image_jpeg(image_path)
     from backend.plate_views import encode_crop_views
-    crops=encode_crop_views(image_path)
+    crops=encode_crop_views(image_path, include_enhanced=verify)
     views=[("Ảnh gốc toàn cảnh",image_b64),*crops] if crops else image_b64
 
     client = _build_client(settings)
@@ -359,12 +388,14 @@ def run_openai_vision(image_path: str) -> dict:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise RuntimeError("OCR image preparation timed out")
-        raw_text = request(client, views, settings, timeout=min(request_timeout, remaining))
+        raw_text = request(client, views, settings, prompt=PLATE_PROMPT if verify else FAST_PLATE_PROMPT,
+                           timeout=min(request_timeout, remaining))
         payload = parse_plate_analysis(raw_text)
-        payload["verification"] = {"status": "not_attempted", "readings": 1}
+        payload["verification"] = {"status": "not_attempted" if verify else "single_pass", "readings": 1}
+        payload["ocr_mode"] = "verified" if verify else "fast"
         # An abstention is final. Never repeatedly prompt an unreadable image
         # until the model eventually invents an acceptable answer.
-        if payload["is_usable"]:
+        if verify and payload["is_usable"]:
             remaining = deadline - time.monotonic()
             readings = 1
             try:
@@ -392,6 +423,12 @@ def run_openai_vision(image_path: str) -> dict:
                 payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
                     quality_note="OCR quá thời gian kiểm chứng; cần đối chiếu ảnh hoặc quét lại.")
             if not payload["is_usable"] and payload.get("ai_analysis"):
+                payload["ai_analysis"] = dict(payload["ai_analysis"], notes=payload["quality_note"])
+        if not verify and time.monotonic() > deadline:
+            payload["verification"]["status"] = "timeout"
+            payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
+                quality_note="OCR quá thời gian; cần đối chiếu ảnh hoặc quét lại.")
+            if payload.get("ai_analysis"):
                 payload["ai_analysis"] = dict(payload["ai_analysis"], notes=payload["quality_note"])
     except Exception as exc:
         raise RuntimeError(_redact_secrets(exc)) from None
@@ -442,6 +479,7 @@ def vision_configuration_status() -> dict:
         "model": model,
         "missing": missing,
         "sdk_available": OpenAI is not None,
+        "ocr_mode": "verified" if _verification_enabled(settings) else "fast",
     }
 
 

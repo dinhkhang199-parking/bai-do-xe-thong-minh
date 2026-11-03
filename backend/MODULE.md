@@ -54,10 +54,12 @@ OCR result policy:
 - `is_usable` means format usable, not guaranteed true.
 - disagreement must be surfaced, not hidden.
 - manual override should be recorded.
-- A usable vision reading receives one fresh image-only verification request;
-  exact identity agreement is required. No retry rescues an initial abstention.
-- Verification failure, timeout or disagreement disables autofill. Keep human
-  confirmation even after agreement; two requests to one model are correlated.
+- Vision defaults to a fast single request through the configured provider,
+  with full-frame context and at most one raw crop. The supported SOL model
+  uses low reasoning; no local OCR delays a structured primary response.
+- Set `ITS_OPENAI_VISION_VERIFY=true` to restore two readings, high reasoning
+  and an enhanced crop. Exact agreement is then required. Neither mode retries
+  an abstention to force a guess. Keep human confirmation in both modes.
 - Local OCR keeps differing candidates, uses the weaker row's confidence when
   combining rows, and never adds confidence for matching a plate pattern.
 - See `../docs/OCR_ACCURACY.md` for budgets, diagnostic limits and deployment.

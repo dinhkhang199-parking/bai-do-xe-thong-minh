@@ -20,8 +20,9 @@ def setup_reader(monkeypatch, tmp_path, responses, mode='responses'):
     path = tmp_path / 'plate.png'
     Image.new('RGB', (100, 80), 'white').save(path)
     monkeypatch.setattr(adapter, 'active_ai_settings', lambda: SimpleNamespace(
-        enabled=True, api_key='fixture-key', base_url='', model='fixture-model', api_mode=mode, timeout=45))
-    monkeypatch.setattr(plate_views, 'encode_crop_views', lambda _: [])
+        enabled=True, api_key='fixture-key', base_url='', model='fixture-model', api_mode=mode, timeout=45,
+        verify_readings=True))
+    monkeypatch.setattr(plate_views, 'encode_crop_views', lambda _, **kw: [])
     pending = iter(responses)
     calls, closed = [], []
 

@@ -69,7 +69,7 @@ def _merge_duplicate_boxes(boxes):
     return kept
 
 
-def crop_views(image_path,finder=None):
+def crop_views(image_path,finder=None, *, include_enhanced=True):
     """Return raw and gently enhanced views only for an unambiguous single ROI."""
     try:
         with Image.open(image_path) as original:
@@ -84,18 +84,20 @@ def crop_views(image_path,finder=None):
         scale=min(4.,1200/max(crop.size))
         if scale!=1:
             crop=crop.resize((max(1,round(crop.width*scale)),max(1,round(crop.height*scale))),Image.Resampling.LANCZOS)
-        enhanced=ImageEnhance.Contrast(ImageOps.grayscale(crop)).enhance(1.4).filter(ImageFilter.UnsharpMask(radius=1.2,percent=120,threshold=3)).convert("RGB")
-        return [("Ảnh cắt phóng to vùng biển số từ ảnh gốc",crop),
-                ("Cùng vùng biển số, tăng tương phản để đối chiếu",enhanced)]
+        views = [("Ảnh cắt phóng to vùng biển số từ ảnh gốc", crop)]
+        if include_enhanced:
+            enhanced=ImageEnhance.Contrast(ImageOps.grayscale(crop)).enhance(1.4).filter(ImageFilter.UnsharpMask(radius=1.2,percent=120,threshold=3)).convert("RGB")
+            views.append(("Cùng vùng biển số, tăng tương phản để đối chiếu", enhanced))
+        return views
     except Exception:
         # Full-frame vision remains usable when the optional local detector fails.
         return []
 
 
-def encode_crop_views(image_path):
+def encode_crop_views(image_path, *, include_enhanced=True):
     import base64
     result=[]
-    for label,image in crop_views(image_path):
+    for label,image in crop_views(image_path, include_enhanced=include_enhanced):
         stream=io.BytesIO();image.save(stream,format="JPEG",quality=95)
         result.append((label,base64.b64encode(stream.getvalue()).decode("ascii")))
     return result

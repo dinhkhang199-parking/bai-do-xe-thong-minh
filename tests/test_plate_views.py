@@ -38,7 +38,7 @@ def test_sol61_request_uses_high_detail_for_all_views_and_high_reasoning():
     calls=[]
     client=SimpleNamespace(responses=SimpleNamespace(create=lambda **kw:calls.append(kw) or SimpleNamespace(status="completed",output_text="{}")))
     adapter._responses_request(client,[("original","AAA"),("crop","BBB"),("contrast","CCC")],
-        SimpleNamespace(model="cx/gpt-6.1-sol",timeout=60))
+        SimpleNamespace(model="cx/gpt-6.1-sol",timeout=60,verify_readings=True))
     request=calls[0]
     images=[part for part in request["input"][0]["content"] if part["type"]=="input_image"]
     assert len(images)==3 and all(part["detail"]=="high" for part in images)
