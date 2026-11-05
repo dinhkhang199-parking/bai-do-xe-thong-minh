@@ -85,7 +85,7 @@ bước riêng để một bước sau thành công không che mất lỗi ở b
 .venv\Scripts\python.exe scripts/demo_acceptance.py --output work/demo-acceptance.json
 ```
 
-Runner tạo checkout và DB tạm, tắt bank/vision thật. Có JUnit, Node output, line/branch coverage và source manifest. Không dùng số test lịch sử để xác nhận bản source mới. Workflow GitHub nằm ở `.github/workflows/checks.yml`; cần run thật sau khi đưa repo lên GitHub, chưa tự xuất bản trong phiên làm việc này.
+Runner tạo checkout và DB tạm, tắt bank/vision thật. Có JUnit, Node output, line/branch coverage và source manifest. Không dùng số test lịch sử để xác nhận bản source mới. Workflow `.github/workflows/checks.yml` tự chạy khi push hoặc mở pull request. Xem kết quả và tải báo cáo kiểm thử tại tab Actions của repository.
 
 ## Đo OCR có ground truth
 
