@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -13,7 +13,11 @@ from backend.production_readiness import check_production_readiness, summarize_f
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--demo-ok", action="store_true", help="Treat demo-only limitations as warnings instead of hard failures")
+    parser.add_argument(
+        "--demo-ok",
+        action="store_true",
+        help="Treat demo-only limitations as warnings instead of hard failures",
+    )
     args = parser.parse_args()
     findings = check_production_readiness(demo_ok=args.demo_ok)
     summary = summarize_findings(findings)

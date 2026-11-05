@@ -1,34 +1,47 @@
 """Edge cases found while exercising the web app and its AI pipeline."""
+
 import json
 from types import SimpleNamespace
 
-import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
 import api.main as api
-from backend import openai_vision_adapter as vision
 from backend import auth
+from backend import openai_vision_adapter as vision
 from backend.ai_settings import AISettings
 from backend.validators import validate_image_extension
 
 
 @pytest.fixture
 def viewer_headers(monkeypatch):
-    monkeypatch.setattr(auth, "fetch_app_user", lambda username: {
-        "username": "regression-viewer", "role": "viewer", "is_active": 1,
-        "auth_version": "regression-viewer-version",
-    } if username == "regression-viewer" else None)
-    token = api.create_session_token(api.AuthUser("regression-viewer", "viewer", auth_source="db",
-                                                auth_version="regression-viewer-version"))
+    monkeypatch.setattr(
+        auth,
+        "fetch_app_user",
+        lambda username: {
+            "username": "regression-viewer",
+            "role": "viewer",
+            "is_active": 1,
+            "auth_version": "regression-viewer-version",
+        }
+        if username == "regression-viewer"
+        else None,
+    )
+    token = api.create_session_token(
+        api.AuthUser(
+            "regression-viewer",
+            "viewer",
+            auth_source="db",
+            auth_version="regression-viewer-version",
+        )
+    )
     return {"Authorization": "Bearer " + token}
 
 
 @pytest.mark.parametrize("query", ["[", "(", ".*", "T+1", "a|b", "\\"])
 def test_ticket_search_treats_user_text_as_literal(monkeypatch, viewer_headers, query, log_rows):
-    log_rows([
-        {"ticket_id": "prefix" + query + "suffix"}, {"ticket_id": "unrelated"}])
+    log_rows([{"ticket_id": "prefix" + query + "suffix"}, {"ticket_id": "unrelated"}])
     client = TestClient(api.app, raise_server_exceptions=False)
     response = client.get("/logs", params={"ticket_id": query}, headers=viewer_headers)
     assert response.status_code == 200
@@ -47,11 +60,14 @@ def test_formats_advertised_by_upload_ui_are_supported(filename):
     assert validate_image_extension(filename) == "." + filename.rsplit(".", 1)[1].lower()
 
 
-@pytest.mark.parametrize("raw", [
-    {"annotated_path": "C:/internal/plate.jpg", "text": "59B106999"},
-    {"candidates": [{"annotated_path": "C:/internal/plate.jpg", "text": "59B106999"}]},
-    {"extra": {"source_path": "C:/internal/original.jpg"}, "text": "59B106999"},
-])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"annotated_path": "C:/internal/plate.jpg", "text": "59B106999"},
+        {"candidates": [{"annotated_path": "C:/internal/plate.jpg", "text": "59B106999"}]},
+        {"extra": {"source_path": "C:/internal/original.jpg"}, "text": "59B106999"},
+    ],
+)
 def test_ocr_response_removes_paths_at_all_depths(monkeypatch, raw):
     monkeypatch.setattr(api, "API_EXPOSE_INTERNAL_PATHS", False)
     cleaned = api._sanitize_ocr_payload(raw)
@@ -66,23 +82,46 @@ def test_ocr_debug_opt_in_preserves_nested_paths(monkeypatch):
     assert api._sanitize_ocr_payload(payload) == payload
 
 
-@pytest.mark.parametrize("field,value", [
-    ("plate_count", True), ("readable", "yes"), ("plate_visible", 1),
-    ("uncertain_characters", "8 or 9"), ("image_issues", [1]), ("notes", ["unknown"]),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("plate_count", True),
+        ("readable", "yes"),
+        ("plate_visible", 1),
+        ("uncertain_characters", "8 or 9"),
+        ("image_issues", [1]),
+        ("notes", ["unknown"]),
+    ],
+)
 def test_ai_output_invalid_types_are_rejected(field, value):
-    payload = dict(plate_visible=True, plate_count=1, plate_text="59B106999", readable=True,
-                   layout="two_line", vehicle_type="motorcycle", uncertain_characters=[],
-                   image_issues=[], notes="")
+    payload = dict(
+        plate_visible=True,
+        plate_count=1,
+        plate_text="59B106999",
+        readable=True,
+        layout="two_line",
+        vehicle_type="motorcycle",
+        uncertain_characters=[],
+        image_issues=[],
+        notes="",
+    )
     payload[field] = value
     with pytest.raises(ValueError):
         vision.parse_plate_analysis(json.dumps(payload))
 
 
 def test_ai_uncertainty_overrides_readable_flag():
-    payload = dict(plate_visible=True, plate_count=1, plate_text="59B106999", readable=True,
-                   layout="two_line", vehicle_type="motorcycle", uncertain_characters=["last digit 8 or 9"],
-                   image_issues=["blur"], notes="")
+    payload = dict(
+        plate_visible=True,
+        plate_count=1,
+        plate_text="59B106999",
+        readable=True,
+        layout="two_line",
+        vehicle_type="motorcycle",
+        uncertain_characters=["last digit 8 or 9"],
+        image_issues=["blur"],
+        notes="",
+    )
     result = vision.parse_plate_analysis(json.dumps(payload))
     assert result["text"] == ""
     assert not result["is_usable"]
@@ -90,7 +129,9 @@ def test_ai_uncertainty_overrides_readable_flag():
 
 
 def test_active_ai_snapshot_controls_key_endpoint_model_and_protocol(monkeypatch, tmp_path):
-    settings = AISettings(True, True, "runtime-test-key", "http://127.0.0.1:9999/v1", "cx/gpt-6-sol", "chat", 17)
+    settings = AISettings(
+        True, True, "runtime-test-key", "http://127.0.0.1:9999/v1", "cx/gpt-6-sol", "chat", 17
+    )
     clock = iter((100.0, 102.0, 103.0))
     monkeypatch.setattr(vision.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(vision, "OPENAI_VISION_VERIFY", False)
@@ -98,14 +139,35 @@ def test_active_ai_snapshot_controls_key_endpoint_model_and_protocol(monkeypatch
     monkeypatch.setattr(vision, "ENABLE_OPENAI_VISION", False)
     monkeypatch.setattr(vision, "OPENAI_API_KEY", "old-test-key")
     captured = {}
-    payload = dict(plate_visible=True, plate_count=1, plate_text="59B106999", readable=True,
-                   layout="two_line", vehicle_type="motorcycle", uncertain_characters=[], image_issues=[], notes="")
+    payload = dict(
+        plate_visible=True,
+        plate_count=1,
+        plate_text="59B106999",
+        readable=True,
+        layout="two_line",
+        vehicle_type="motorcycle",
+        uncertain_characters=[],
+        image_issues=[],
+        notes="",
+    )
+
     def create(**kwargs):
         captured["request"] = kwargs
-        return SimpleNamespace(choices=[SimpleNamespace(finish_reason="stop", message=SimpleNamespace(content=json.dumps(payload), refusal=None))])
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    finish_reason="stop",
+                    message=SimpleNamespace(content=json.dumps(payload), refusal=None),
+                )
+            ]
+        )
+
     def client(**kwargs):
         captured["client"] = kwargs
-        return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)), close=lambda: None)
+        return SimpleNamespace(
+            chat=SimpleNamespace(completions=SimpleNamespace(create=create)), close=lambda: None
+        )
+
     monkeypatch.setattr(vision, "OpenAI", client)
     image = tmp_path / "plate.png"
     Image.new("RGB", (100, 80), "white").save(image)
@@ -113,18 +175,35 @@ def test_active_ai_snapshot_controls_key_endpoint_model_and_protocol(monkeypatch
     assert captured["client"]["api_key"] == "runtime-test-key"
     assert captured["client"]["base_url"] == settings.base_url
     assert captured["request"]["model"] == settings.model
-    assert captured["request"]["timeout"] == 15  # Two seconds of image preparation share the budget.
+    assert (
+        captured["request"]["timeout"] == 15
+    )  # Two seconds of image preparation share the budget.
 
 
 def test_active_ai_key_is_redacted_from_provider_errors(monkeypatch):
-    monkeypatch.setattr(vision, "active_ai_settings", lambda: AISettings(True, True, "runtime-secret-value", "http://127.0.0.1:9999/v1", "cx/gpt-6-sol", "responses"))
+    monkeypatch.setattr(
+        vision,
+        "active_ai_settings",
+        lambda: AISettings(
+            True,
+            True,
+            "runtime-secret-value",
+            "http://127.0.0.1:9999/v1",
+            "cx/gpt-6-sol",
+            "responses",
+        ),
+    )
     assert "runtime-secret-value" not in vision._redact_secrets("failed runtime-secret-value")
 
 
 def test_write_limit_resets_and_isolated_users_do_not_share_bucket(monkeypatch):
     now = [1000.0]
     monkeypatch.setattr(api.time, "monotonic", lambda: now[0])
-    monkeypatch.setattr(api, "_WRITE_BUCKETS", __import__('collections').defaultdict(__import__('collections').deque))
+    monkeypatch.setattr(
+        api,
+        "_WRITE_BUCKETS",
+        __import__("collections").defaultdict(__import__("collections").deque),
+    )
     request = SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"))
     user = api.AuthUser(username="load-test-1", role="operator")
     for _ in range(30):

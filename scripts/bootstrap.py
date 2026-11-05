@@ -1,6 +1,6 @@
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,7 +24,9 @@ COMMANDS = {
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print("Usage: python scripts/bootstrap.py [doctor|test|api|web|benchmark|compare-ocr|prepare-ground-truth|prefill-ground-truth|benchmark-bad|backup|restore|report|prod-check]")
+        print(
+            "Usage: python scripts/bootstrap.py [doctor|test|api|web|benchmark|compare-ocr|prepare-ground-truth|prefill-ground-truth|benchmark-bad|backup|restore|report|prod-check]"
+        )
         raise SystemExit(1)
 
     command = COMMANDS[sys.argv[1]]

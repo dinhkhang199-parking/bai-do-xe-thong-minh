@@ -1,8 +1,14 @@
 import csv
 from collections import Counter
 
-from scripts.benchmark_common import DATASET_CSV, ROOT, evaluate_image, iter_dataset_rows, normalize, resolve_benchmark_uploads_dir
-
+from scripts.benchmark_common import (
+    DATASET_CSV,
+    ROOT,
+    evaluate_image,
+    iter_dataset_rows,
+    normalize,
+    resolve_benchmark_uploads_dir,
+)
 
 UPLOADS_DIR = resolve_benchmark_uploads_dir()
 RESULTS_CSV = ROOT / "data" / "benchmark" / "results" / "benchmark_dataset_results.csv"
@@ -39,7 +45,9 @@ def main():
         result = evaluate_image(image_path)
         predicted_plate = result.get("text", "")
         is_usable = bool(result.get("is_usable", False))
-        exact_match = normalize(predicted_plate) == normalize(expected_plate) if expected_plate else False
+        exact_match = (
+            normalize(predicted_plate) == normalize(expected_plate) if expected_plate else False
+        )
 
         result_row = {
             "file": file_name,
@@ -61,7 +69,20 @@ def main():
             counters[f"{label}_exact"] += 1
 
     with RESULTS_CSV.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "label", "expected_plate", "predicted_plate", "confidence", "is_usable", "exact_match", "quality_note", "notes"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "file",
+                "label",
+                "expected_plate",
+                "predicted_plate",
+                "confidence",
+                "is_usable",
+                "exact_match",
+                "quality_note",
+                "notes",
+            ],
+        )
         writer.writeheader()
         writer.writerows(rows)
 

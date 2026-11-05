@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -13,9 +11,15 @@ def test_openai_vision_requested_raises_instead_of_silent_fallback(monkeypatch, 
     image_path.write_bytes(b"fake")
 
     monkeypatch.setattr(alpr_service, "ENABLE_OPENAI_VISION", True)
-    monkeypatch.setattr(alpr_service, "run_openai_vision", lambda path: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        alpr_service, "run_openai_vision", lambda path: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
     fake_frame = np.zeros((100, 100, 3), dtype=np.uint8)
-    monkeypatch.setattr(alpr_service, "cv2", type("FakeCV2", (), {"imread": staticmethod(lambda path: fake_frame)})())
+    monkeypatch.setattr(
+        alpr_service,
+        "cv2",
+        type("FakeCV2", (), {"imread": staticmethod(lambda path: fake_frame)})(),
+    )
     monkeypatch.setattr(alpr_service, "load_fast_alpr", lambda detector_model=None: None)
 
     with pytest.raises(RuntimeError, match="OpenAI vision failed"):

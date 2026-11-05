@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
-from backend.benchmarking import finite_number, first_text, plate_key as normalize_plate_text
+from backend.benchmarking import finite_number, first_text
+from backend.benchmarking import plate_key as normalize_plate_text
 
 
 @dataclass(frozen=True)
@@ -64,7 +65,11 @@ def analyze_ocr_rows(rows: list[dict], low_confidence_threshold: float = 0.75) -
             unreadable += 1
         if expected and predicted and expected == predicted:
             exact += 1
-        if expected and predicted and normalize_plate_text(expected) == normalize_plate_text(predicted):
+        if (
+            expected
+            and predicted
+            and normalize_plate_text(expected) == normalize_plate_text(predicted)
+        ):
             normalized += 1
         c_ok, c_total, pairs = _char_accuracy(expected, predicted)
         char_correct += c_ok

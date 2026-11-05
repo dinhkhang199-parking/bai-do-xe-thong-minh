@@ -7,8 +7,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from backend.app_service import process_plate_image
-from backend.config import BENCHMARK_UPLOADS_DIR
 from backend.benchmarking import plate_key as normalize_plate_text
+from backend.config import BENCHMARK_UPLOADS_DIR
 
 DATASET_CSV = ROOT / "data" / "benchmark" / "datasets" / "benchmark_dataset.csv"
 

@@ -14,7 +14,9 @@ def test_parse_static_bearer_token_returns_matching_role(monkeypatch):
         {"admin": "admin-token", "operator": "operator-token", "viewer": "viewer-token"},
     )
 
-    assert auth.parse_static_bearer_token("operator-token") == AuthUser(username="operator", role="operator")
+    assert auth.parse_static_bearer_token("operator-token") == AuthUser(
+        username="operator", role="operator"
+    )
 
 
 @pytest.mark.parametrize("token", [None, "", "wrong-token"])
@@ -73,7 +75,14 @@ def test_register_streamlit_user_creates_db_user(monkeypatch):
 
     monkeypatch.setattr(auth, "get_streamlit_users", lambda: [])
     monkeypatch.setattr(auth, "fetch_app_user", lambda username: None)
-    monkeypatch.setattr(auth, "create_app_user", lambda username, password_hash, role="viewer": created.setdefault("payload", (username, password_hash, role)) or True)
+    monkeypatch.setattr(
+        auth,
+        "create_app_user",
+        lambda username, password_hash, role="viewer": created.setdefault(
+            "payload", (username, password_hash, role)
+        )
+        or True,
+    )
 
     ok, message = auth.register_streamlit_user("operator01", "StrongPass123", role="operator")
 
@@ -88,7 +97,12 @@ def test_authenticate_streamlit_user_rejects_inactive_db_user(monkeypatch):
     monkeypatch.setattr(
         auth,
         "fetch_app_user",
-        lambda username: {"username": username, "password_hash": "hash", "role": "viewer", "is_active": 0},
+        lambda username: {
+            "username": username,
+            "password_hash": "hash",
+            "role": "viewer",
+            "is_active": 0,
+        },
     )
 
     assert auth.authenticate_streamlit_user("viewer01", "StrongPass123") is None
@@ -104,7 +118,11 @@ def test_change_streamlit_password_rejects_wrong_current_password(monkeypatch):
 
 
 def test_change_streamlit_password_rejects_same_password(monkeypatch):
-    monkeypatch.setattr(auth, "authenticate_streamlit_user", lambda username, password: AuthUser(username=username, role="viewer"))
+    monkeypatch.setattr(
+        auth,
+        "authenticate_streamlit_user",
+        lambda username, password: AuthUser(username=username, role="viewer"),
+    )
 
     ok, message = auth.change_streamlit_password("viewer01", "StrongPass123", "StrongPass123")
 

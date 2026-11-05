@@ -1,13 +1,11 @@
-from pathlib import Path
 import sqlite3
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
-
 from scripts.backup_runtime import create_runtime_backup
 from scripts.restore_runtime import restore_runtime_backup, validate_backup_archive
+
+pytestmark = pytest.mark.integration
 
 
 def test_restore_runtime_backup_roundtrip(tmp_path):
@@ -53,6 +51,7 @@ def test_restore_runtime_backup_roundtrip(tmp_path):
 def test_validate_backup_archive_rejects_missing_manifest(tmp_path):
     bad_zip = tmp_path / "bad.zip"
     import zipfile
+
     with zipfile.ZipFile(bad_zip, "w") as archive:
         archive.writestr("somefile.txt", "x")
 

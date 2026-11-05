@@ -8,7 +8,9 @@ def test_device_simulators_produce_status_and_commands(tmp_path):
     image_path.write_bytes(b"fake")
 
     camera = CameraSnapshotSimulator("lane-test")
-    event = camera.ingest_uploaded_snapshot(str(image_path), plate_text="66-B1 123.45", confidence=0.88)
+    event = camera.ingest_uploaded_snapshot(
+        str(image_path), plate_text="66-B1 123.45", confidence=0.88
+    )
     assert event.lane_id == "lane-test"
     assert camera.status().state == "SIMULATED"
 

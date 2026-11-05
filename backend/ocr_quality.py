@@ -1,9 +1,14 @@
-import re
 import math
+import re
 from dataclasses import dataclass
 
-from backend.plate_format import classify_plate_type, format_plate_by_type, format_confirmed_plate, normalize_generic_plate_text, looks_like_vn_bottom, looks_like_vn_top, normalize_plate_text
-
+from backend.plate_format import (
+    classify_plate_type,
+    format_confirmed_plate,
+    looks_like_vn_bottom,
+    looks_like_vn_top,
+    normalize_generic_plate_text,
+)
 
 MIN_CONFIDENCE_FOR_USABLE_OCR = 0.72
 STRONG_CONFIDENCE_FOR_USABLE_OCR = 0.82
@@ -62,32 +67,66 @@ def assess_ocr_quality(text: str, confidence: float) -> OcrQualityAssessment:
     raw_alpha_count = sum(ch.isalpha() for ch in raw_text)
     alpha_count = sum(ch.isalpha() for ch in compact_formatted)
     digit_count = sum(ch.isdigit() for ch in normalized)
-    is_dotted_five_digit_plate = bool(re.fullmatch(r"\d{2}-[A-Z0-9]{2,3} \d{3}\.\d{2}", formatted or ""))
+    is_dotted_five_digit_plate = bool(
+        re.fullmatch(r"\d{2}-[A-Z0-9]{2,3} \d{3}\.\d{2}", formatted or "")
+    )
 
     if not normalized:
-        return OcrQualityAssessment(False, "Không có ký tự hợp lệ", normalized, formatted, plate_type)
+        return OcrQualityAssessment(
+            False, "Không có ký tự hợp lệ", normalized, formatted, plate_type
+        )
 
     if looks_like_vn_top(normalized) or looks_like_vn_bottom(normalized):
-        return OcrQualityAssessment(False, "Mới đọc được một phần biển số", normalized, formatted, plate_type)
+        return OcrQualityAssessment(
+            False, "Mới đọc được một phần biển số", normalized, formatted, plate_type
+        )
 
     if alpha_count == 0 and len(normalized) >= 7:
-        return OcrQualityAssessment(False, "Chuỗi OCR thiếu ký tự chữ, khả năng sai định dạng biển số", normalized, formatted, plate_type)
+        return OcrQualityAssessment(
+            False,
+            "Chuỗi OCR thiếu ký tự chữ, khả năng sai định dạng biển số",
+            normalized,
+            formatted,
+            plate_type,
+        )
 
     if len(normalized) < 7:
-        return OcrQualityAssessment(False, "Kết quả OCR quá ngắn để tin cậy", normalized, formatted, plate_type)
+        return OcrQualityAssessment(
+            False, "Kết quả OCR quá ngắn để tin cậy", normalized, formatted, plate_type
+        )
 
-    if not format_confirmed_plate(text) or normalize_generic_plate_text(text) != normalize_generic_plate_text(formatted):
-        return OcrQualityAssessment(False, "OCR cần sửa ký tự hoặc sai định dạng; phải đối chiếu ảnh", normalized, formatted, plate_type)
+    if not format_confirmed_plate(text) or normalize_generic_plate_text(
+        text
+    ) != normalize_generic_plate_text(formatted):
+        return OcrQualityAssessment(
+            False,
+            "OCR cần sửa ký tự hoặc sai định dạng; phải đối chiếu ảnh",
+            normalized,
+            formatted,
+            plate_type,
+        )
 
     if is_full_vn_plate(normalized) or is_full_vn_plate_formatted(formatted):
-        required_confidence = DOTTED_FIVE_DIGIT_CONFIDENCE_FLOOR if is_dotted_five_digit_plate else MIN_CONFIDENCE_FOR_USABLE_OCR
+        required_confidence = (
+            DOTTED_FIVE_DIGIT_CONFIDENCE_FLOOR
+            if is_dotted_five_digit_plate
+            else MIN_CONFIDENCE_FOR_USABLE_OCR
+        )
         if conf >= required_confidence and raw_alpha_count >= 1:
             return OcrQualityAssessment(True, "Biển số hợp lệ", normalized, formatted, plate_type)
         if conf >= MANUAL_REVIEW_CONFIDENCE_FLOOR and alpha_count >= 1 and digit_count >= 6:
-            return OcrQualityAssessment(True, "Biển số gần đúng, cần xác nhận thủ công", normalized, formatted, plate_type)
-        return OcrQualityAssessment(False, "Đúng định dạng nhưng confidence chưa đủ cao", normalized, formatted, plate_type)
+            return OcrQualityAssessment(
+                True, "Biển số gần đúng, cần xác nhận thủ công", normalized, formatted, plate_type
+            )
+        return OcrQualityAssessment(
+            False, "Đúng định dạng nhưng confidence chưa đủ cao", normalized, formatted, plate_type
+        )
 
     if conf >= STRONG_CONFIDENCE_FOR_USABLE_OCR and alpha_count >= 1 and digit_count >= 5:
-        return OcrQualityAssessment(True, "OCR mạnh nhưng chưa khớp hoàn toàn định dạng", normalized, formatted, plate_type)
+        return OcrQualityAssessment(
+            True, "OCR mạnh nhưng chưa khớp hoàn toàn định dạng", normalized, formatted, plate_type
+        )
 
-    return OcrQualityAssessment(False, "Kết quả OCR chưa đủ tin cậy", normalized, formatted, plate_type)
+    return OcrQualityAssessment(
+        False, "Kết quả OCR chưa đủ tin cậy", normalized, formatted, plate_type
+    )

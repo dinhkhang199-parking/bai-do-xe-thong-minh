@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -27,22 +27,58 @@ def validate_runtime_db(db_path=DB_PATH) -> list[ValidationIssue]:
 
     if not logs.empty:
         if {"status", "exit_time"}.issubset(logs.columns):
-            bad_completed = logs[(logs["status"] == "COMPLETED") & (logs["exit_time"].isna() | (logs["exit_time"].astype(str).str.strip() == ""))]
+            bad_completed = logs[
+                (logs["status"] == "COMPLETED")
+                & (logs["exit_time"].isna() | (logs["exit_time"].astype(str).str.strip() == ""))
+            ]
             if not bad_completed.empty:
-                issues.append(ValidationIssue("error", "COMPLETED_WITHOUT_EXIT_TIME", f"{len(bad_completed)} completed tickets missing exit_time"))
-            bad_active = logs[(logs["status"] == "IN_PARKING") & logs["exit_time"].notna() & (logs["exit_time"].astype(str).str.strip() != "")]
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        "COMPLETED_WITHOUT_EXIT_TIME",
+                        f"{len(bad_completed)} completed tickets missing exit_time",
+                    )
+                )
+            bad_active = logs[
+                (logs["status"] == "IN_PARKING")
+                & logs["exit_time"].notna()
+                & (logs["exit_time"].astype(str).str.strip() != "")
+            ]
             if not bad_active.empty:
-                issues.append(ValidationIssue("error", "ACTIVE_WITH_EXIT_TIME", f"{len(bad_active)} active tickets unexpectedly have exit_time"))
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        "ACTIVE_WITH_EXIT_TIME",
+                        f"{len(bad_active)} active tickets unexpectedly have exit_time",
+                    )
+                )
         if {"status", "review_reason", "match_result"}.issubset(logs.columns):
-            bad_review = logs[(logs["status"] == "NEEDS_REVIEW") & (logs["match_result"] != "MISMATCH") & (logs["review_reason"].isna() | (logs["review_reason"].astype(str).str.strip() == ""))]
+            bad_review = logs[
+                (logs["status"] == "NEEDS_REVIEW")
+                & (logs["match_result"] != "MISMATCH")
+                & (
+                    logs["review_reason"].isna()
+                    | (logs["review_reason"].astype(str).str.strip() == "")
+                )
+            ]
             if not bad_review.empty:
-                issues.append(ValidationIssue("warning", "REVIEW_WITHOUT_REASON", f"{len(bad_review)} review tickets missing reason"))
+                issues.append(
+                    ValidationIssue(
+                        "warning",
+                        "REVIEW_WITHOUT_REASON",
+                        f"{len(bad_review)} review tickets missing reason",
+                    )
+                )
 
     users = list_app_users(db_path)
     if not users.empty and "role" in users.columns:
         invalid_roles = users[~users["role"].isin(["admin", "operator", "viewer"])]
         if not invalid_roles.empty:
-            issues.append(ValidationIssue("error", "INVALID_USER_ROLE", f"{len(invalid_roles)} users have invalid roles"))
+            issues.append(
+                ValidationIssue(
+                    "error", "INVALID_USER_ROLE", f"{len(invalid_roles)} users have invalid roles"
+                )
+            )
 
     return issues
 
@@ -54,7 +90,9 @@ def main() -> int:
     print("Runtime DB validation")
     print("=" * 40)
     print(f"Health: {health_code} ({health_tone})")
-    print(f"Tickets: total={kpis.total_tickets}, active={kpis.active_tickets}, review={kpis.review_tickets}, completed={kpis.completed_tickets}, cancelled={kpis.cancelled_tickets}")
+    print(
+        f"Tickets: total={kpis.total_tickets}, active={kpis.active_tickets}, review={kpis.review_tickets}, completed={kpis.completed_tickets}, cancelled={kpis.cancelled_tickets}"
+    )
     if not issues:
         print("[OK] No runtime DB issues found")
         return 0

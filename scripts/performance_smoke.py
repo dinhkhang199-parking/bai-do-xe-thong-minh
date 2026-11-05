@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import statistics
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -21,7 +21,12 @@ def compute_latency_stats(values: list[float]) -> dict[str, float]:
         return {"count": 0, "average_ms": 0.0, "p95_ms": 0.0, "max_ms": 0.0}
     ordered = sorted(values)
     index = min(len(ordered) - 1, int(round(0.95 * (len(ordered) - 1))))
-    return {"count": len(values), "average_ms": statistics.mean(values), "p95_ms": ordered[index], "max_ms": max(values)}
+    return {
+        "count": len(values),
+        "average_ms": statistics.mean(values),
+        "p95_ms": ordered[index],
+        "max_ms": max(values),
+    }
 
 
 def run_smoke(iterations: int = 30) -> dict:

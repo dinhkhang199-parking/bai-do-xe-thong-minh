@@ -21,8 +21,8 @@ def _load_env_file_fallback(path: Path) -> None:
             os.environ[key] = value
 
 
-_ENV_PATH = Path(__file__).resolve().parents[1] / '.env'
-if os.getenv('ITS_LOAD_ENV', 'true').lower() not in {'false', '0', 'no'}:
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+if os.getenv("ITS_LOAD_ENV", "true").lower() not in {"false", "0", "no"}:
     if load_dotenv is not None:
         load_dotenv(_ENV_PATH)
     else:
@@ -40,7 +40,7 @@ def _ensure_dir(path: Path) -> Path:
     return path
 
 
-APP_TITLE = os.getenv("ITS_APP_TITLE", "Hệ thống nhận diện biển số xe máy")
+APP_TITLE = os.getenv("ITS_APP_TITLE", "Bãi đỗ xe thông minh")
 SCHEMA_VERSION = 6
 
 BASE_DIR = _ensure_dir(Path(os.getenv("ITS_BASE_DIR", str(Path.home() / "plate_demo_data"))))
@@ -60,8 +60,12 @@ ENABLE_PADDLE_OCR = _as_bool(os.getenv("ITS_ENABLE_PADDLE_OCR"), default=False)
 ENABLE_HARDCASE_OCR = _as_bool(os.getenv("ITS_ENABLE_HARDCASE_OCR"), default=False)
 OCR_ACCURACY_MODE = _as_bool(os.getenv("ITS_OCR_ACCURACY_MODE"), default=True)
 ENABLE_DEEP_OCR_RETRY = _as_bool(os.getenv("ITS_ENABLE_DEEP_OCR_RETRY"), default=True)
-DEEP_OCR_CONFIDENCE_THRESHOLD = float(os.getenv("ITS_DEEP_OCR_CONFIDENCE_THRESHOLD", "0.86" if OCR_ACCURACY_MODE else "0.80"))
-ENABLE_PADDLE_FALLBACK = _as_bool(os.getenv("ITS_ENABLE_PADDLE_FALLBACK"), default=OCR_ACCURACY_MODE)
+DEEP_OCR_CONFIDENCE_THRESHOLD = float(
+    os.getenv("ITS_DEEP_OCR_CONFIDENCE_THRESHOLD", "0.86" if OCR_ACCURACY_MODE else "0.80")
+)
+ENABLE_PADDLE_FALLBACK = _as_bool(
+    os.getenv("ITS_ENABLE_PADDLE_FALLBACK"), default=OCR_ACCURACY_MODE
+)
 ENABLE_OPENAI_VISION = _as_bool(os.getenv("ITS_ENABLE_OPENAI_VISION"), default=False)
 OPENAI_API_KEY = os.getenv("ITS_OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("ITS_OPENAI_BASE_URL", "")

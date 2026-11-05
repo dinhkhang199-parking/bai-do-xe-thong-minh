@@ -9,7 +9,9 @@ if str(ROOT) not in sys.path:
 
 from backend.plate_format import format_vn_plate
 
-INPUT_CSV = ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+INPUT_CSV = (
+    ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+)
 OUTPUT_CSV = ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_prefilled.csv"
 REVIEW_MD = ROOT / "data" / "benchmark" / "review" / "benchmark_ground_truth_review_queue.md"
 
@@ -37,7 +39,12 @@ def main():
         raise SystemExit(f"Missing input csv: {INPUT_CSV}")
 
     rows = []
-    review_lines = ["# Ground Truth Review Queue", "", "Các dòng dưới đây cần rà tay trước khi dùng cho benchmark exact-match.", ""]
+    review_lines = [
+        "# Ground Truth Review Queue",
+        "",
+        "Các dòng dưới đây cần rà tay trước khi dùng cho benchmark exact-match.",
+        "",
+    ]
 
     with INPUT_CSV.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
@@ -79,7 +86,9 @@ def main():
             )
 
     with OUTPUT_CSV.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "expected_plate", "ocr_suggestion", "label", "notes"])
+        writer = csv.DictWriter(
+            f, fieldnames=["file", "expected_plate", "ocr_suggestion", "label", "notes"]
+        )
         writer.writeheader()
         writer.writerows(rows)
 

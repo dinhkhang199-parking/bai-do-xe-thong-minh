@@ -3,9 +3,10 @@ import csv
 from backend.alpr_service import run_alpr
 from scripts.benchmark_common import ROOT, normalize, resolve_benchmark_uploads_dir
 
-
 UPLOADS_DIR = resolve_benchmark_uploads_dir()
-TRUTH_CSV = ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+TRUTH_CSV = (
+    ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+)
 OUT_CSV = ROOT / "data" / "benchmark" / "results" / "benchmark_ground_truth_results.csv"
 
 
@@ -21,34 +22,50 @@ def main():
             notes = (row.get("notes") or "").strip()
             image_path = UPLOADS_DIR / file_name
             if not image_path.exists():
-                rows.append({
-                    "file": file_name,
-                    "expected_plate": expected_plate,
-                    "predicted_plate": "",
-                    "confidence": 0.0,
-                    "is_usable": False,
-                    "exact_match": False,
-                    "quality_note": "missing file",
-                    "notes": notes,
-                })
+                rows.append(
+                    {
+                        "file": file_name,
+                        "expected_plate": expected_plate,
+                        "predicted_plate": "",
+                        "confidence": 0.0,
+                        "is_usable": False,
+                        "exact_match": False,
+                        "quality_note": "missing file",
+                        "notes": notes,
+                    }
+                )
                 continue
 
             result = run_alpr(str(image_path))
             predicted_plate = result.get("text", "")
             exact_match = normalize(predicted_plate) == normalize(expected_plate)
-            rows.append({
-                "file": file_name,
-                "expected_plate": expected_plate,
-                "predicted_plate": predicted_plate,
-                "confidence": result.get("confidence", 0.0),
-                "is_usable": result.get("is_usable", False),
-                "exact_match": exact_match,
-                "quality_note": result.get("quality_note", ""),
-                "notes": notes,
-            })
+            rows.append(
+                {
+                    "file": file_name,
+                    "expected_plate": expected_plate,
+                    "predicted_plate": predicted_plate,
+                    "confidence": result.get("confidence", 0.0),
+                    "is_usable": result.get("is_usable", False),
+                    "exact_match": exact_match,
+                    "quality_note": result.get("quality_note", ""),
+                    "notes": notes,
+                }
+            )
 
     with out_csv.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "expected_plate", "predicted_plate", "confidence", "is_usable", "exact_match", "quality_note", "notes"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "file",
+                "expected_plate",
+                "predicted_plate",
+                "confidence",
+                "is_usable",
+                "exact_match",
+                "quality_note",
+                "notes",
+            ],
+        )
         writer.writeheader()
         writer.writerows(rows)
 

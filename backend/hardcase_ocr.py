@@ -6,8 +6,8 @@ except Exception:
     cv2 = None
 
 from backend.alpr_service import get_detector_choices, run_alpr
-from backend.plate_format import format_vn_plate, normalize_generic_plate_text
 from backend.ocr_quality import clamp_confidence
+from backend.plate_format import format_vn_plate, normalize_generic_plate_text
 
 
 def _load_image(image_path: str):
@@ -32,7 +32,9 @@ def _rotations(image):
     variants = []
     for angle in (-8, -5, 5, 8):
         matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(image, matrix, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        rotated = cv2.warpAffine(
+            image, matrix, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
+        )
         variants.append((f"rot{angle}", rotated))
     return variants
 
@@ -61,7 +63,13 @@ def _looks_like_garbage_cluster(text: str) -> bool:
     digit_count = sum(ch.isdigit() for ch in compact)
     if alpha_count == 0:
         return True
-    if alpha_count >= 2 and digit_count >= 4 and len(compact) >= 7 and "-" not in (text or "") and " " not in (text or ""):
+    if (
+        alpha_count >= 2
+        and digit_count >= 4
+        and len(compact) >= 7
+        and "-" not in (text or "")
+        and " " not in (text or "")
+    ):
         return True
     return False
 
@@ -85,7 +93,9 @@ def _candidate_is_safe_upgrade(baseline: dict, candidate: dict) -> bool:
         return False
     if candidate.get("ambiguous") or candidate.get("ocr_disagreement"):
         return False
-    if not normalize_generic_plate_text(candidate.get("text", "")).startswith(normalize_generic_plate_text(baseline.get("text", ""))):
+    if not normalize_generic_plate_text(candidate.get("text", "")).startswith(
+        normalize_generic_plate_text(baseline.get("text", ""))
+    ):
         return False
     if len(candidate_text) < 8:
         return False
@@ -97,7 +107,10 @@ def _candidate_is_safe_upgrade(baseline: dict, candidate: dict) -> bool:
     min_confidence = 0.95 if is_rotation_variant else 0.75
     if candidate_conf < min_confidence:
         return False
-    if baseline_conf > 0.0 and candidate_conf + (0.02 if is_detector_variant else 0.0) <= baseline_conf:
+    if (
+        baseline_conf > 0.0
+        and candidate_conf + (0.02 if is_detector_variant else 0.0) <= baseline_conf
+    ):
         return False
     return True
 
@@ -130,9 +143,15 @@ def run_hardcase_alpr(image_path: str, models_dir: Path, baseline: dict | None =
     safe_candidates = [item for item in candidates if _candidate_is_safe_upgrade(baseline, item)]
     identities = {normalize_generic_plate_text(item.get("text", "")) for item in safe_candidates}
     if len(identities) > 1 or any(item.get("ambiguous") for item in candidates):
-        return dict(baseline, hardcase_used=False, is_usable=False, review_required=True,
-                    ocr_disagreement=True, candidates=candidates,
-                    quality_note="Các lần quét bổ sung không thống nhất; hãy đối chiếu ảnh và nhập tay.")
+        return dict(
+            baseline,
+            hardcase_used=False,
+            is_usable=False,
+            review_required=True,
+            ocr_disagreement=True,
+            candidates=candidates,
+            quality_note="Các lần quét bổ sung không thống nhất; hãy đối chiếu ảnh và nhập tay.",
+        )
     if not safe_candidates:
         baseline["hardcase_used"] = False
         return baseline

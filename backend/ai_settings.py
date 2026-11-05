@@ -1,9 +1,10 @@
 """Persist AI settings and atomically activate an immutable snapshot for this process."""
-from dataclasses import dataclass, field
+
 import os
-from pathlib import Path
 import re
 import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import urlsplit
 
 
@@ -37,8 +38,9 @@ def _stored_values(path: Path) -> dict[str, str]:
     return values
 
 
-def save_ai_config(path: Path, *, api_key: str, base_url: str, model: str,
-                   api_mode: str, activate: bool = False) -> AISettings:
+def save_ai_config(
+    path: Path, *, api_key: str, base_url: str, model: str, api_mode: str, activate: bool = False
+) -> AISettings:
     global _runtime
     stored = _stored_values(path)
     # A blank password field keeps the stored key; never send it back to the browser.
@@ -49,25 +51,45 @@ def save_ai_config(path: Path, *, api_key: str, base_url: str, model: str,
         raise ValueError("Base URL không được chứa khoảng trắng hoặc xuống dòng")
     try:
         url = urlsplit(base_url)
-        port = url.port
+        # Accessing .port validates malformed/out-of-range ports even though
+        # the URL retains the port and we do not need its numeric value here.
+        _ = url.port
     except ValueError:
         raise ValueError("Base URL không hợp lệ") from None
-    if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password or url.query or url.fragment:
+    if (
+        url.scheme not in {"http", "https"}
+        or not url.hostname
+        or url.username
+        or url.password
+        or url.query
+        or url.fragment
+    ):
         raise ValueError("Base URL không hợp lệ; không đặt khóa API trong URL")
     if not re.fullmatch(r"[A-Za-z0-9/_.:-]+", model) or api_mode not in {"responses", "chat"}:
         raise ValueError("Model hoặc loại API không hợp lệ")
     settings = AISettings(True, True, key, base_url.rstrip("/"), model, api_mode)
-    values = {"ITS_ENABLE_OPENAI_VISION": "true", "ITS_ENABLE_VISION_IN_AUTO": "true",
-              "ITS_OPENAI_API_KEY": key, "ITS_OPENAI_BASE_URL": settings.base_url,
-              "ITS_OPENAI_VISION_MODEL": model, "ITS_OPENAI_API_MODE": api_mode,
-              "ITS_OPENAI_TIMEOUT_SECONDS": "45"}
+    values = {
+        "ITS_ENABLE_OPENAI_VISION": "true",
+        "ITS_ENABLE_VISION_IN_AUTO": "true",
+        "ITS_OPENAI_API_KEY": key,
+        "ITS_OPENAI_BASE_URL": settings.base_url,
+        "ITS_OPENAI_VISION_MODEL": model,
+        "ITS_OPENAI_API_MODE": api_mode,
+        "ITS_OPENAI_TIMEOUT_SECONDS": "45",
+    }
     lines = path.read_text(encoding="utf-8-sig").splitlines() if path.exists() else []
     retained = [line for line in lines if line.split("=", 1)[0].strip() not in values]
     retained.extend(f"{name}={value}" for name, value in values.items())
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
-                                         prefix=".ai-settings-", suffix=".tmp", delete=False) as handle:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=".ai-settings-",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
             temp_path = Path(handle.name)
             handle.write("\n".join(retained) + "\n")
         os.replace(temp_path, path)

@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from backend.benchmarking import plate_key as normalize_plate_text
 from backend.config import ENABLE_OPENAI_VISION, OPENAI_BASE_URL, OPENAI_VISION_MODEL
 from backend.openai_vision_adapter import run_openai_vision
-from backend.benchmarking import plate_key as normalize_plate_text
 from scripts.benchmark_common import DATASET_CSV, iter_dataset_rows, resolve_benchmark_uploads_dir
 
 RESULTS_CSV = ROOT / "data" / "benchmark" / "results" / "benchmark_openai_vision_results.csv"
@@ -59,7 +59,9 @@ def main():
         result = run_openai_vision(str(image_path))
         predicted_plate = result.get("text", "")
         is_usable = bool(result.get("is_usable", False))
-        exact_match = normalize(predicted_plate) == normalize(expected_plate) if expected_plate else False
+        exact_match = (
+            normalize(predicted_plate) == normalize(expected_plate) if expected_plate else False
+        )
 
         rows.append(
             {

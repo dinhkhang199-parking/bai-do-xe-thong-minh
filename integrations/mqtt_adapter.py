@@ -10,7 +10,12 @@ class MqttAdapterSimulator:
         return True
 
     def status(self) -> DeviceStatus:
-        return DeviceStatus(device_id="mqtt-simulator", device_type="mqtt", state="SIMULATED", detail=f"{len(self.published)} events published")
+        return DeviceStatus(
+            device_id="mqtt-simulator",
+            device_type="mqtt",
+            state="SIMULATED",
+            detail=f"{len(self.published)} events published",
+        )
 
 
 mqtt_simulator = MqttAdapterSimulator()

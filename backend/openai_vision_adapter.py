@@ -13,8 +13,8 @@ from backend.config import (
     OPENAI_API_MODE,
     OPENAI_BASE_URL,
     OPENAI_TIMEOUT_SECONDS,
-    OPENAI_VISION_VERIFY,
     OPENAI_VISION_MODEL,
+    OPENAI_VISION_VERIFY,
 )
 from backend.logging_config import get_logger
 from backend.plate_format import (
@@ -119,8 +119,12 @@ def _reasoning_options(model, settings=None, *, chat=False):
 def _redact_secrets(message) -> str:
     text = str(message)
     settings = active_ai_settings()
-    for secret in (OPENAI_API_KEY, OPENAI_BASE_URL,
-                   getattr(settings, "api_key", ""), getattr(settings, "base_url", "")):
+    for secret in (
+        OPENAI_API_KEY,
+        OPENAI_BASE_URL,
+        getattr(settings, "api_key", ""),
+        getattr(settings, "base_url", ""),
+    ):
         if secret:
             text = text.replace(secret, "[redacted]")
     text = re.sub(r"https?://[^\s\"']+", "[redacted-url]", text)
@@ -148,7 +152,16 @@ def _is_full_ai_plate(formatted: str) -> bool:
     return bool(format_confirmed_plate(formatted))
 
 
-def _ai_payload(*, text: str, raw_text: str, is_usable: bool, review_required: bool, ai_status: str, ai_analysis: dict | None, quality_note: str | None = None) -> dict:
+def _ai_payload(
+    *,
+    text: str,
+    raw_text: str,
+    is_usable: bool,
+    review_required: bool,
+    ai_status: str,
+    ai_analysis: dict | None,
+    quality_note: str | None = None,
+) -> dict:
     normalized = normalize_generic_plate_text(text or raw_text)
     return {
         "text": text,
@@ -169,15 +182,27 @@ def _payload_from_structured(data: dict) -> dict:
     for key in ("plate_visible", "readable"):
         if key not in data or not isinstance(data[key], bool):
             raise ValueError("AI output has invalid boolean field")
-    if "plate_count" not in data or not isinstance(data["plate_count"], int) or isinstance(data["plate_count"], bool):
+    if (
+        "plate_count" not in data
+        or not isinstance(data["plate_count"], int)
+        or isinstance(data["plate_count"], bool)
+    ):
         raise ValueError("AI output has invalid plate_count")
     if not isinstance(data.get("plate_text"), str):
         raise ValueError("AI output has invalid plate_text")
-    if not isinstance(data.get("layout", ""), str) or not isinstance(data.get("vehicle_type", ""), str) or not isinstance(data.get("notes", ""), str):
+    if (
+        not isinstance(data.get("layout", ""), str)
+        or not isinstance(data.get("vehicle_type", ""), str)
+        or not isinstance(data.get("notes", ""), str)
+    ):
         raise ValueError("AI output has invalid string field")
-    if not isinstance(data.get("image_issues", []), list) or not all(isinstance(i, str) for i in data.get("image_issues", [])):
+    if not isinstance(data.get("image_issues", []), list) or not all(
+        isinstance(i, str) for i in data.get("image_issues", [])
+    ):
         raise ValueError("AI output has invalid image_issues")
-    if not isinstance(data.get("uncertain_characters", []), list) or not all(isinstance(i, str) for i in data.get("uncertain_characters", [])):
+    if not isinstance(data.get("uncertain_characters", []), list) or not all(
+        isinstance(i, str) for i in data.get("uncertain_characters", [])
+    ):
         raise ValueError("AI output has invalid uncertain_characters")
 
     ai_analysis = {
@@ -198,9 +223,25 @@ def _payload_from_structured(data: dict) -> dict:
     readable = data["readable"]
 
     if not plate_visible or plate_count != 1 or "multiple_plates" in ai_analysis["image_issues"]:
-        return _ai_payload(text="", raw_text=plate_text, is_usable=False, review_required=True, ai_status="analyzed", ai_analysis=ai_analysis, quality_note="Không xác định được đúng một biển số")
+        return _ai_payload(
+            text="",
+            raw_text=plate_text,
+            is_usable=False,
+            review_required=True,
+            ai_status="analyzed",
+            ai_analysis=ai_analysis,
+            quality_note="Không xác định được đúng một biển số",
+        )
     if not readable or "?" in plate_text or ai_analysis["uncertain_characters"]:
-        return _ai_payload(text="", raw_text=plate_text, is_usable=False, review_required=True, ai_status="analyzed", ai_analysis=ai_analysis, quality_note="Ký tự biển số chưa đủ rõ, cần đối chiếu ảnh")
+        return _ai_payload(
+            text="",
+            raw_text=plate_text,
+            is_usable=False,
+            review_required=True,
+            ai_status="analyzed",
+            ai_analysis=ai_analysis,
+            quality_note="Ký tự biển số chưa đủ rõ, cần đối chiếu ảnh",
+        )
 
     formatted = _format_ai_plate(plate_text, ai_analysis["vehicle_type"], ai_analysis["layout"])
     is_usable = _is_full_ai_plate(formatted)
@@ -211,7 +252,9 @@ def _payload_from_structured(data: dict) -> dict:
         review_required=True,
         ai_status="analyzed",
         ai_analysis=ai_analysis,
-        quality_note="Biển số hợp lệ, cần đối chiếu ảnh" if is_usable else "Kết quả AI chưa đủ tin cậy",
+        quality_note="Biển số hợp lệ, cần đối chiếu ảnh"
+        if is_usable
+        else "Kết quả AI chưa đủ tin cậy",
     )
 
 
@@ -262,7 +305,9 @@ def _encode_image_jpeg(image_path: str) -> str:
             longest = max(width, height)
             if longest > MAX_IMAGE_DIMENSION:
                 scale = MAX_IMAGE_DIMENSION / float(longest)
-                image = image.resize((max(1, int(width * scale)), max(1, int(height * scale))), Image.LANCZOS)
+                image = image.resize(
+                    (max(1, int(width * scale)), max(1, int(height * scale))), Image.LANCZOS
+                )
             if image.mode not in ("RGB", "L"):
                 image = image.convert("RGB")
             buffer = io.BytesIO()
@@ -282,21 +327,34 @@ def _build_client(settings=None):
     return OpenAI(**kwargs)
 
 
-def _vision_content(image_b64,chat=False, prompt=PLATE_PROMPT):
-    views=image_b64 if isinstance(image_b64,list) else [("Ảnh gốc toàn cảnh",image_b64)]
-    content=[{"type":"text" if chat else "input_text","text":prompt}]
-    for index,(label,encoded) in enumerate(views[:3]):
+def _vision_content(image_b64, chat=False, prompt=PLATE_PROMPT):
+    views = image_b64 if isinstance(image_b64, list) else [("Ảnh gốc toàn cảnh", image_b64)]
+    content = [{"type": "text" if chat else "input_text", "text": prompt}]
+    for index, (label, encoded) in enumerate(views[:3]):
         if index:
-            content.append({"type":"text" if chat else "input_text","text":label})
+            content.append({"type": "text" if chat else "input_text", "text": label})
         if chat:
-            content.append({"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{encoded}","detail":"high"}})
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{encoded}", "detail": "high"},
+                }
+            )
         else:
-            content.append({"type":"input_image","image_url":f"data:image/jpeg;base64,{encoded}","detail":"high"})
+            content.append(
+                {
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{encoded}",
+                    "detail": "high",
+                }
+            )
     return content
 
 
-def _responses_request(client, image_b64, settings=None, *, prompt=PLATE_PROMPT, timeout=None) -> str:
-    model=getattr(settings,"model",OPENAI_VISION_MODEL)
+def _responses_request(
+    client, image_b64, settings=None, *, prompt=PLATE_PROMPT, timeout=None
+) -> str:
+    model = getattr(settings, "model", OPENAI_VISION_MODEL)
     options = _reasoning_options(model, settings)
     response = client.responses.create(
         model=model,
@@ -315,7 +373,9 @@ def _responses_request(client, image_b64, settings=None, *, prompt=PLATE_PROMPT,
                 "content": _vision_content(image_b64, prompt=prompt),
             }
         ],
-        timeout=timeout if timeout is not None else getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS),
+        timeout=timeout
+        if timeout is not None
+        else getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS),
         **options,
     )
     status = getattr(response, "status", None)
@@ -327,8 +387,10 @@ def _responses_request(client, image_b64, settings=None, *, prompt=PLATE_PROMPT,
     return raw_text
 
 
-def _chat_request(client, image_b64: str, settings=None, *, prompt=PLATE_PROMPT, timeout=None) -> str:
-    model=getattr(settings,"model",OPENAI_VISION_MODEL)
+def _chat_request(
+    client, image_b64: str, settings=None, *, prompt=PLATE_PROMPT, timeout=None
+) -> str:
+    model = getattr(settings, "model", OPENAI_VISION_MODEL)
     options = _reasoning_options(model, settings, chat=True)
     response = client.chat.completions.create(
         model=model,
@@ -343,10 +405,12 @@ def _chat_request(client, image_b64: str, settings=None, *, prompt=PLATE_PROMPT,
         messages=[
             {
                 "role": "user",
-                "content": _vision_content(image_b64,chat=True, prompt=prompt),
+                "content": _vision_content(image_b64, chat=True, prompt=prompt),
             }
         ],
-        timeout=timeout if timeout is not None else getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS),
+        timeout=timeout
+        if timeout is not None
+        else getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS),
         **options,
     )
     choices = getattr(response, "choices", None) or []
@@ -375,23 +439,41 @@ def run_openai_vision(image_path: str) -> dict:
 
     started = time.monotonic()
     verify = _verification_enabled(settings)
-    request_timeout = max(0.1, min(float(getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS)), MAX_READING_BUDGET_SECONDS))
+    request_timeout = max(
+        0.1,
+        min(
+            float(getattr(settings, "timeout", OPENAI_TIMEOUT_SECONDS)), MAX_READING_BUDGET_SECONDS
+        ),
+    )
     deadline = started + min(request_timeout * (2 if verify else 1), MAX_READING_BUDGET_SECONDS)
     image_b64 = _encode_image_jpeg(image_path)
     from backend.plate_views import encode_crop_views
-    crops=encode_crop_views(image_path, include_enhanced=verify)
-    views=[("Ảnh gốc toàn cảnh",image_b64),*crops] if crops else image_b64
+
+    crops = encode_crop_views(image_path, include_enhanced=verify)
+    views = [("Ảnh gốc toàn cảnh", image_b64), *crops] if crops else image_b64
 
     client = _build_client(settings)
     try:
-        request = _chat_request if getattr(settings, "api_mode", OPENAI_API_MODE) == "chat" else _responses_request
+        request = (
+            _chat_request
+            if getattr(settings, "api_mode", OPENAI_API_MODE) == "chat"
+            else _responses_request
+        )
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise RuntimeError("OCR image preparation timed out")
-        raw_text = request(client, views, settings, prompt=PLATE_PROMPT if verify else FAST_PLATE_PROMPT,
-                           timeout=min(request_timeout, remaining))
+        raw_text = request(
+            client,
+            views,
+            settings,
+            prompt=PLATE_PROMPT if verify else FAST_PLATE_PROMPT,
+            timeout=min(request_timeout, remaining),
+        )
         payload = parse_plate_analysis(raw_text)
-        payload["verification"] = {"status": "not_attempted" if verify else "single_pass", "readings": 1}
+        payload["verification"] = {
+            "status": "not_attempted" if verify else "single_pass",
+            "readings": 1,
+        }
         payload["ocr_mode"] = "verified" if verify else "fast"
         # An abstention is final. Never repeatedly prompt an unreadable image
         # until the model eventually invents an acceptable answer.
@@ -402,32 +484,63 @@ def run_openai_vision(image_path: str) -> dict:
                 if remaining <= 0:
                     raise TimeoutError("No verification budget remains")
                 readings = 2
-                check = parse_plate_analysis(request(client, views, settings,
-                    prompt=VERIFY_PROMPT, timeout=min(request_timeout, remaining)))
+                check = parse_plate_analysis(
+                    request(
+                        client,
+                        views,
+                        settings,
+                        prompt=VERIFY_PROMPT,
+                        timeout=min(request_timeout, remaining),
+                    )
+                )
                 first_identity = normalize_generic_plate_text(payload["text"])
                 second_identity = normalize_generic_plate_text(check["text"])
                 agreed = bool(check["is_usable"] and first_identity == second_identity)
-                payload["verification"] = {"status": "agreed" if agreed else "disagreed",
-                    "readings": 2, "analysis": check["ai_analysis"]}
+                payload["verification"] = {
+                    "status": "agreed" if agreed else "disagreed",
+                    "readings": 2,
+                    "analysis": check["ai_analysis"],
+                }
                 if not agreed:
-                    payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
-                        ocr_disagreement=True, quality_note="Hai lượt đọc không thống nhất; cần đối chiếu ảnh hoặc chụp lại.")
+                    payload.update(
+                        text="",
+                        formatted_text="",
+                        normalized_text="",
+                        is_usable=False,
+                        ocr_disagreement=True,
+                        quality_note="Hai lượt đọc không thống nhất; cần đối chiếu ảnh hoặc chụp lại.",
+                    )
             except Exception:
                 # Verification failures cannot turn a single reading into an
                 # accepted result or trigger a local fallback that hides doubt.
                 payload["verification"] = {"status": "unavailable", "readings": readings}
-                payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
-                    quality_note="Chưa kiểm chứng được kết quả OCR; cần đối chiếu ảnh hoặc quét lại.")
+                payload.update(
+                    text="",
+                    formatted_text="",
+                    normalized_text="",
+                    is_usable=False,
+                    quality_note="Chưa kiểm chứng được kết quả OCR; cần đối chiếu ảnh hoặc quét lại.",
+                )
             if time.monotonic() > deadline:
                 payload["verification"]["status"] = "timeout"
-                payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
-                    quality_note="OCR quá thời gian kiểm chứng; cần đối chiếu ảnh hoặc quét lại.")
+                payload.update(
+                    text="",
+                    formatted_text="",
+                    normalized_text="",
+                    is_usable=False,
+                    quality_note="OCR quá thời gian kiểm chứng; cần đối chiếu ảnh hoặc quét lại.",
+                )
             if not payload["is_usable"] and payload.get("ai_analysis"):
                 payload["ai_analysis"] = dict(payload["ai_analysis"], notes=payload["quality_note"])
         if not verify and time.monotonic() > deadline:
             payload["verification"]["status"] = "timeout"
-            payload.update(text="", formatted_text="", normalized_text="", is_usable=False,
-                quality_note="OCR quá thời gian; cần đối chiếu ảnh hoặc quét lại.")
+            payload.update(
+                text="",
+                formatted_text="",
+                normalized_text="",
+                is_usable=False,
+                quality_note="OCR quá thời gian; cần đối chiếu ảnh hoặc quét lại.",
+            )
             if payload.get("ai_analysis"):
                 payload["ai_analysis"] = dict(payload["ai_analysis"], notes=payload["quality_note"])
     except Exception as exc:
@@ -440,8 +553,8 @@ def run_openai_vision(image_path: str) -> dict:
 
     payload["ocr_engine"] = "openai-vision"
     payload["engine"] = "openai-vision"
-    payload["model"] = getattr(settings,"model",OPENAI_VISION_MODEL)
-    payload["image_view_count"] = 1+len(crops)
+    payload["model"] = getattr(settings, "model", OPENAI_VISION_MODEL)
+    payload["image_view_count"] = 1 + len(crops)
     return payload
 
 
@@ -486,18 +599,37 @@ def vision_configuration_status() -> dict:
 def probe_vision_connection() -> dict:
     settings = active_ai_settings()
     if OpenAI is None:
-        return {"connected": False, "model_listed": False, "analysis_verified": False, "message": "openai sdk is not installed"}
+        return {
+            "connected": False,
+            "model_listed": False,
+            "analysis_verified": False,
+            "message": "openai sdk is not installed",
+        }
     if not getattr(settings, "api_key", OPENAI_API_KEY):
-        return {"connected": False, "model_listed": False, "analysis_verified": False, "message": "OPENAI_API_KEY is not configured"}
+        return {
+            "connected": False,
+            "model_listed": False,
+            "analysis_verified": False,
+            "message": "OPENAI_API_KEY is not configured",
+        }
 
     client = None
     try:
         client = _build_client(settings)
         model_list = client.models.list()
         model_ids = {getattr(item, "id", "") for item in getattr(model_list, "data", [])}
-        return {"connected": True, "model_listed": getattr(settings, "model", OPENAI_VISION_MODEL) in model_ids, "analysis_verified": False}
+        return {
+            "connected": True,
+            "model_listed": getattr(settings, "model", OPENAI_VISION_MODEL) in model_ids,
+            "analysis_verified": False,
+        }
     except Exception:
-        return {"connected": False, "model_listed": False, "analysis_verified": False, "message": "Không thể kết nối provider AI"}
+        return {
+            "connected": False,
+            "model_listed": False,
+            "analysis_verified": False,
+            "message": "Không thể kết nối provider AI",
+        }
     finally:
         if client is not None:
             try:

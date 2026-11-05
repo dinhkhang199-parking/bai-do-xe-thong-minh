@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -14,7 +14,11 @@ def generate_report(report_dir: Path = REPORT_DIR) -> Path:
     report_dir.mkdir(parents=True, exist_ok=True)
     path = report_dir / "evaluation_report.md"
     benchmark_path = report_dir / "benchmark_report.md"
-    benchmark_note = "File present (review provenance and source hash before relying on it)" if benchmark_path.exists() else "Not measured; use scripts/field_evaluate.py with reviewed labels"
+    benchmark_note = (
+        "File present (review provenance and source hash before relying on it)"
+        if benchmark_path.exists()
+        else "Not measured; use scripts/field_evaluate.py with reviewed labels"
+    )
     path.write_text(
         "# ITS Parking Technical Evaluation Report\n\n"
         "## Architecture\n\n"

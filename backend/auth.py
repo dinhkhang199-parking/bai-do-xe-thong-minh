@@ -6,9 +6,8 @@ import logging
 import os
 import re
 import secrets
-
-from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from backend.config import (
@@ -23,7 +22,15 @@ from backend.config import (
     STREAMLIT_VIEWER_PASSWORD,
     STREAMLIT_VIEWER_USERNAME,
 )
-from backend.db import append_audit_log, create_app_user, fetch_app_user, update_app_user_password_hash, update_login_failure, update_login_success, upgrade_legacy_password_hash
+from backend.db import (
+    append_audit_log,
+    create_app_user,
+    fetch_app_user,
+    update_app_user_password_hash,
+    update_login_failure,
+    update_login_success,
+    upgrade_legacy_password_hash,
+)
 
 Role = Literal["admin", "operator", "viewer"]
 ALL_ROLES: set[Role] = {"admin", "operator", "viewer"}
@@ -67,7 +74,7 @@ LOCKOUT_MINUTES = 15
 
 def _hash_password_legacy(password: str, username: str) -> str:
     seed = f"its::{(username or '').strip().lower()}::{password or ''}"
-    return hashlib.sha256(seed.encode('utf-8')).hexdigest()
+    return hashlib.sha256(seed.encode("utf-8")).hexdigest()
 
 
 def _hash_password(password: str) -> str:
@@ -130,28 +137,56 @@ def authenticate_streamlit_user(username: str, password: str) -> AuthUser | None
     db_user = fetch_app_user(clean_username)
     if db_user:
         if not bool(db_user.get("is_active", 1)) or _is_locked(db_user):
-            _safe_audit(clean_username, db_user.get("role"), "auth.login_blocked", target_type="user", target_id=clean_username)
+            _safe_audit(
+                clean_username,
+                db_user.get("role"),
+                "auth.login_blocked",
+                target_type="user",
+                target_id=clean_username,
+            )
             return None
-        verified, needs_upgrade = _verify_password(clean_password, db_user.get("password_hash", ""), clean_username)
+        verified, needs_upgrade = _verify_password(
+            clean_password, db_user.get("password_hash", ""), clean_username
+        )
         if verified:
             version = db_user.get("auth_version")
             if needs_upgrade:
                 version = upgrade_legacy_password_hash(
-                    clean_username, db_user.get("password_hash", ""), version or "",
+                    clean_username,
+                    db_user.get("password_hash", ""),
+                    version or "",
                     _hash_password(clean_password),
                 )
                 if not version:
                     return None
             update_login_success(clean_username)
-            _safe_audit(clean_username, db_user.get("role"), "auth.login_success", target_type="user", target_id=clean_username)
-            return AuthUser(username=db_user["username"], role=db_user["role"],
-                            auth_source="db", auth_version=version)
+            _safe_audit(
+                clean_username,
+                db_user.get("role"),
+                "auth.login_success",
+                target_type="user",
+                target_id=clean_username,
+            )
+            return AuthUser(
+                username=db_user["username"],
+                role=db_user["role"],
+                auth_source="db",
+                auth_version=version,
+            )
         failed_count = int(db_user.get("failed_login_count") or 0) + 1
         locked_until = None
         if failed_count >= MAX_FAILED_LOGINS:
-            locked_until = (datetime.now() + timedelta(minutes=LOCKOUT_MINUTES)).isoformat(timespec="seconds")
+            locked_until = (datetime.now() + timedelta(minutes=LOCKOUT_MINUTES)).isoformat(
+                timespec="seconds"
+            )
         update_login_failure(clean_username, locked_until)
-        _safe_audit(clean_username, db_user.get("role"), "auth.login_failure", target_type="user", target_id=clean_username)
+        _safe_audit(
+            clean_username,
+            db_user.get("role"),
+            "auth.login_failure",
+            target_type="user",
+            target_id=clean_username,
+        )
         # A database identity owns this username, including its password and role.
         return None
 
@@ -176,12 +211,17 @@ def _validate_new_password(password: str, username: str = "") -> tuple[bool, str
     return True, ""
 
 
-def register_streamlit_user(username: str, password: str, role: Role = "viewer") -> tuple[bool, str]:
+def register_streamlit_user(
+    username: str, password: str, role: Role = "viewer"
+) -> tuple[bool, str]:
     clean_username = (username or "").strip()
     clean_password = password or ""
 
     if not USERNAME_PATTERN.match(clean_username):
-        return False, "Tên đăng nhập chỉ được chứa chữ, số, dấu chấm, gạch dưới hoặc gạch ngang, dài 3-32 ký tự"
+        return (
+            False,
+            "Tên đăng nhập chỉ được chứa chữ, số, dấu chấm, gạch dưới hoặc gạch ngang, dài 3-32 ký tự",
+        )
 
     is_valid_password, password_message = _validate_new_password(clean_password, clean_username)
     if not is_valid_password:
@@ -201,7 +241,9 @@ def register_streamlit_user(username: str, password: str, role: Role = "viewer")
     return True, "Đăng ký tài khoản thành công"
 
 
-def change_streamlit_password(username: str, current_password: str, new_password: str) -> tuple[bool, str]:
+def change_streamlit_password(
+    username: str, current_password: str, new_password: str
+) -> tuple[bool, str]:
     clean_username = (username or "").strip()
     user = authenticate_streamlit_user(clean_username, current_password)
     if user is None:
@@ -239,8 +281,9 @@ def _sign_token(header_b64: str, payload_b64: str) -> str:
 
 def _environment_principal(user: LoginUser) -> AuthUser:
     # Bind configuration-backed sessions to current credentials without disclosing them.
-    material = json.dumps(["its-env-session-v1", user.username, user.role, user.password],
-                          separators=(",", ":")).encode("utf-8")
+    material = json.dumps(
+        ["its-env-session-v1", user.username, user.role, user.password], separators=(",", ":")
+    ).encode("utf-8")
     version = hmac.new(API_JWT_SECRET.encode("utf-8"), material, hashlib.sha256).hexdigest()
     return AuthUser(user.username, user.role, auth_source="env", auth_version=version)
 
@@ -262,9 +305,14 @@ def _current_session_principal(username: str, source: str) -> AuthUser | None:
 
 
 def _same_session_identity(current: AuthUser | None, user: AuthUser) -> bool:
-    return bool(current and user.auth_version and current.username == user.username
-                and current.role == user.role and current.auth_source == user.auth_source
-                and hmac.compare_digest(current.auth_version or "", user.auth_version))
+    return bool(
+        current
+        and user.auth_version
+        and current.username == user.username
+        and current.role == user.role
+        and current.auth_source == user.auth_source
+        and hmac.compare_digest(current.auth_version or "", user.auth_version)
+    )
 
 
 def create_session_token(user: AuthUser, expires_minutes: int | None = None) -> str:

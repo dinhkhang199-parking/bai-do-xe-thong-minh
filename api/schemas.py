@@ -1,55 +1,55 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TariffInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     revision: int = Field(ge=1)
     enabled: bool
-    mode: Literal["hourly","flat"]
-    flat_amount: int = Field(ge=0,le=10000000)
-    first_minutes: int = Field(ge=1,le=1440)
-    first_amount: int = Field(ge=0,le=10000000)
-    next_minutes: int = Field(ge=1,le=1440)
-    next_amount: int = Field(ge=0,le=10000000)
-    daily_cap: int = Field(ge=0,le=10000000)
-    grace_minutes: int = Field(ge=0,le=1440)
+    mode: Literal["hourly", "flat"]
+    flat_amount: int = Field(ge=0, le=10000000)
+    first_minutes: int = Field(ge=1, le=1440)
+    first_amount: int = Field(ge=0, le=10000000)
+    next_minutes: int = Field(ge=1, le=1440)
+    next_amount: int = Field(ge=0, le=10000000)
+    daily_cap: int = Field(ge=0, le=10000000)
+    grace_minutes: int = Field(ge=0, le=1440)
 
 
 class PaymentInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     amount: int = Field(ge=0)
-    quote_id: str = Field(min_length=64,max_length=64)
-    method: Literal["cash","transfer"]
-    received_amount: int = Field(ge=0,le=1000000000)
+    quote_id: str = Field(min_length=64, max_length=64)
+    method: Literal["cash", "transfer"]
+    received_amount: int = Field(ge=0, le=1000000000)
 
 
 class PaymentQRInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    amount: int = Field(ge=1,le=1000000000)
+    amount: int = Field(ge=1, le=1000000000)
 
 
 class AutoQRInput(PaymentQRInput):
-    idempotency_key: str = Field(min_length=16,max_length=80,pattern="^[A-Za-z0-9_-]+$")
+    idempotency_key: str = Field(min_length=16, max_length=80, pattern="^[A-Za-z0-9_-]+$")
 
 
 class MBSettingsInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    account_no: str = Field(max_length=24,pattern="^[0-9]*$")
+    account_no: str = Field(max_length=24, pattern="^[0-9]*$")
     enabled: bool
     revision: int = Field(ge=1)
 
 
 class MBCaptchaInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    id: str = Field(min_length=32,max_length=32,pattern="^[a-f0-9]+$")
-    text: str = Field(min_length=4,max_length=12,pattern="^[A-Za-z0-9]+$")
+    id: str = Field(min_length=32, max_length=32, pattern="^[a-f0-9]+$")
+    text: str = Field(min_length=4, max_length=12, pattern="^[A-Za-z0-9]+$")
 
 
 class MBConnectInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    captcha_mode: Literal["manual","ecaptcha","local"] = "manual"
+    captcha_mode: Literal["manual", "ecaptcha", "local"] = "manual"
 
 
 class ApiError(BaseModel):
@@ -174,4 +174,3 @@ class UserRecord(BaseModel):
 class AdminUsersResponse(ApiResponse):
     items: list[dict[str, Any]] = Field(default_factory=list)
     count: int = 0
-

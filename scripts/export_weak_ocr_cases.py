@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -20,7 +20,12 @@ def export_weak_cases(report_json: Path, output_dir: Path | None = None) -> dict
     weak = []
     for sample in data.get("samples", []):
         note = sample.get("quality_note", "")
-        is_weak = (not sample.get("text")) or sample.get("confidence", 0.0) < 0.75 or "ngắn" in note or "phần" in note
+        is_weak = (
+            (not sample.get("text"))
+            or sample.get("confidence", 0.0) < 0.75
+            or "ngắn" in note
+            or "phần" in note
+        )
         if not is_weak:
             continue
         source = Path(sample["image"])
@@ -29,7 +34,9 @@ def export_weak_cases(report_json: Path, output_dir: Path | None = None) -> dict
             shutil.copy2(source, target)
         weak.append({**sample, "exported_path": str(target)})
     summary = {"count": len(weak), "output_dir": str(output_dir), "items": weak}
-    (output_dir / "weak_cases.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output_dir / "weak_cases.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return summary
 
 

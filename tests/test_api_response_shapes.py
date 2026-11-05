@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.api
-
-
 import api.main as api_main
+
+pytestmark = pytest.mark.api
 
 
 def test_ok_helper_wraps_payload():

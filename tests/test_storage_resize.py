@@ -1,15 +1,13 @@
 from io import BytesIO
 from pathlib import Path
-import sys
-from PIL import Image
 
 import pytest
-
-pytestmark = pytest.mark.integration
-
+from PIL import Image
 
 from backend import storage
 from backend.validators import MAX_UPLOAD_SIZE_BYTES, ValidationError
+
+pytestmark = pytest.mark.integration
 
 
 def real_image(format="JPEG"):
@@ -37,7 +35,9 @@ def test_save_uploaded_file_accepts_fastapi_upload(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
 
     data = real_image()
-    saved_path = Path(storage.save_uploaded_file(DummyFastAPIUpload("plate.JPG", data), "api entry"))
+    saved_path = Path(
+        storage.save_uploaded_file(DummyFastAPIUpload("plate.JPG", data), "api entry")
+    )
 
     assert saved_path.exists()
     assert saved_path.suffix == ".jpg"
@@ -64,13 +64,17 @@ def test_save_uploaded_file_rejects_oversized_file(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
 
     with pytest.raises(ValidationError, match="too large"):
-        storage.save_uploaded_file(DummyUpload("plate.jpg", b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)), "entry")
+        storage.save_uploaded_file(
+            DummyUpload("plate.jpg", b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)), "entry"
+        )
 
 
 def test_save_uploaded_file_sanitizes_prefix_path_separators(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
 
-    saved_path = Path(storage.save_uploaded_file(DummyUpload("plate.jpg", real_image()), "../evil/path"))
+    saved_path = Path(
+        storage.save_uploaded_file(DummyUpload("plate.jpg", real_image()), "../evil/path")
+    )
 
     assert saved_path.exists()
     assert saved_path.resolve().is_relative_to(tmp_path.resolve())
@@ -101,16 +105,18 @@ def test_save_uploaded_file_validates_even_when_cv2_unavailable(tmp_path, monkey
 
 
 def test_save_uploaded_file_preserves_large_image_detail_for_roi_crop(tmp_path, monkeypatch):
-    import numpy as np
     import cv2
+    import numpy as np
 
     monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
 
     image = np.full((2200, 3200, 3), 255, dtype=np.uint8)
-    ok, encoded = cv2.imencode('.jpg', image)
+    ok, encoded = cv2.imencode(".jpg", image)
     assert ok
 
-    saved_path = Path(storage.save_uploaded_file(DummyUpload('large.jpg', encoded.tobytes()), 'entry'))
+    saved_path = Path(
+        storage.save_uploaded_file(DummyUpload("large.jpg", encoded.tobytes()), "entry")
+    )
     saved = cv2.imread(str(saved_path))
 
     assert saved is not None
@@ -119,16 +125,18 @@ def test_save_uploaded_file_preserves_large_image_detail_for_roi_crop(tmp_path, 
 
 
 def test_save_uploaded_file_keeps_small_image_size(tmp_path, monkeypatch):
-    import numpy as np
     import cv2
+    import numpy as np
 
     monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
 
     image = np.full((600, 900, 3), 255, dtype=np.uint8)
-    ok, encoded = cv2.imencode('.jpg', image)
+    ok, encoded = cv2.imencode(".jpg", image)
     assert ok
 
-    saved_path = Path(storage.save_uploaded_file(DummyUpload('small.jpg', encoded.tobytes()), 'entry'))
+    saved_path = Path(
+        storage.save_uploaded_file(DummyUpload("small.jpg", encoded.tobytes()), "entry")
+    )
     saved = cv2.imread(str(saved_path))
 
     assert saved is not None

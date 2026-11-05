@@ -1,14 +1,11 @@
-from pathlib import Path
 import sqlite3
-import sys
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
-
 from backend import db as db_module
 from backend import parking_service as parking_module
+
+pytestmark = pytest.mark.integration
 
 
 def test_vehicle_entry_rejects_invalid_plate(tmp_path, monkeypatch):
@@ -27,13 +24,22 @@ def test_vehicle_entry_normalizes_and_persists_plate(tmp_path, monkeypatch):
     db_module.init_db(db_path)
     monkeypatch.setattr(parking_module, "DB_PATH", db_path)
 
-    result = parking_module.vehicle_entry("66b1\n069.99", ocr_confidence=1.7, ocr_engine="paddleocr", ocr_text="66B106999", manual_override=True)
+    result = parking_module.vehicle_entry(
+        "66b1\n069.99",
+        ocr_confidence=1.7,
+        ocr_engine="paddleocr",
+        ocr_text="66B106999",
+        manual_override=True,
+    )
 
     assert result["success"] is True
     assert result["plate_entry"] == "66-B1 069.99"
 
     conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT plate_entry, status, match_result, entry_ocr_confidence, entry_ocr_engine, entry_ocr_text, entry_manual_override FROM parking_logs WHERE ticket_id = ?", (result["ticket_id"],)).fetchone()
+    row = conn.execute(
+        "SELECT plate_entry, status, match_result, entry_ocr_confidence, entry_ocr_engine, entry_ocr_text, entry_manual_override FROM parking_logs WHERE ticket_id = ?",
+        (result["ticket_id"],),
+    ).fetchone()
     conn.close()
 
     assert row == ("66-B1 069.99", "IN_PARKING", "PENDING", 1.0, "paddleocr", "66B106999", 1)
@@ -113,7 +119,13 @@ def test_vehicle_exit_manual_override_can_resolve_to_match(tmp_path, monkeypatch
     monkeypatch.setattr(parking_module, "DB_PATH", db_path)
 
     entry = parking_module.vehicle_entry("66-B1 069.99")
-    result = parking_module.vehicle_exit(entry["ticket_id"], "66b106999", ocr_engine="fast-alpr-easyocr", ocr_text="66B106999", manual_override=True)
+    result = parking_module.vehicle_exit(
+        entry["ticket_id"],
+        "66b106999",
+        ocr_engine="fast-alpr-easyocr",
+        ocr_text="66B106999",
+        manual_override=True,
+    )
 
     assert result["success"] is True
     assert result["match_result"] == "MATCH"
@@ -121,7 +133,10 @@ def test_vehicle_exit_manual_override_can_resolve_to_match(tmp_path, monkeypatch
     assert result["plate_exit"] == "66-B1 069.99"
 
     conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT exit_ocr_engine, exit_ocr_text, exit_manual_override FROM parking_logs WHERE ticket_id = ?", (entry["ticket_id"],)).fetchone()
+    row = conn.execute(
+        "SELECT exit_ocr_engine, exit_ocr_text, exit_manual_override FROM parking_logs WHERE ticket_id = ?",
+        (entry["ticket_id"],),
+    ).fetchone()
     conn.close()
 
     assert row == ("fast-alpr-easyocr", "66B106999", 1)
@@ -236,7 +251,10 @@ def test_vehicle_entry_supports_legacy_plate_number_column(tmp_path, monkeypatch
 
     assert result["success"] is True
     conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT plate_number, plate_entry, time_in, entry_time FROM parking_logs WHERE ticket_id = ?", (result["ticket_id"],)).fetchone()
+    row = conn.execute(
+        "SELECT plate_number, plate_entry, time_in, entry_time FROM parking_logs WHERE ticket_id = ?",
+        (result["ticket_id"],),
+    ).fetchone()
     conn.close()
     assert row[0] == "66-B1 069.99"
     assert row[1] == "66-B1 069.99"

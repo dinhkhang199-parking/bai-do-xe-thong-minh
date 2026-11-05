@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from backend.logging_config import get_logger
 from backend.ocr_quality import assess_ocr_quality
 from backend.plate_format import format_vn_plate
@@ -16,7 +14,11 @@ class PaddleOCRAdapter:
     def __init__(self) -> None:
         if PaddleOCR is None:
             raise RuntimeError("paddleocr is not installed")
-        self.reader = PaddleOCR(use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False)
+        self.reader = PaddleOCR(
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+        )
 
     def predict_image(self, image_path: str) -> dict:
         result = self.reader.predict(input=image_path)

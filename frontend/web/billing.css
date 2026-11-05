@@ -1,98 +1,412 @@
-.ticket-dialog { width: min(800px, calc(100vw - 32px)); max-height: 92svh; padding: 24px; border: 1px solid var(--border); border-radius: 16px; color: var(--text); background: var(--surface); overflow: auto; }
-.ticket-dialog::backdrop { background: #07111caa; }
-.ticket-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 22px; }
-.ticket-dialog-header h2 { margin: 0; font-size: 20px; }
-.ticket-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-.ticket-layout > section { min-width: 0; }
-.ticket-pass h3, .ticket-charge h3 { font-size: 16px; margin: 0 0 12px; }
-.ticket-plate { font-size: 24px; font-weight: 700; margin: 12px 0; }
-.ticket-qr-image { display: block; width: 240px; max-width: 100%; height: auto; background: white; border-radius: 8px; }
-.ticket-code { font-size: 12px; overflow-wrap: anywhere; }
-.ticket-facts { font-size: 13px; margin: 16px 0; }
-.ticket-facts div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.ticket-facts dt { color: var(--ui-muted); flex-shrink: 0; }
-.ticket-facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-.ticket-note, .pricing-intro { font-size: 13px; line-height: 1.6; color: var(--ui-muted); }
-.ticket-amount { display: block; margin: 16px 0; font-size: 26px; font-weight: 700; }
-.billing-check { display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 1.5; margin: 16px 0; }
-.billing-check input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--primary); }
-.ticket-action { white-space: nowrap; }
-.qr-lookup { padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
-.qr-lookup > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 9px; }
-.qr-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.qr-input-row input { min-width: 0; width: 100%; border-radius: 9px; border: 1px solid var(--ui-input-border); padding: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
-.qr-input-row .btn { flex-shrink: 0; }
-.qr-camera-panel { margin-top: 16px; }
-.qr-camera-panel video { width: 100%; max-height: 250px; background: #111; border-radius: 10px; }
-.qr-camera-panel .btn { margin-top: 10px; }
-.pricing-intro { max-width: 75ch; }
-.pricing-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 32px; margin-top: 28px; }
-.pricing-form { min-width: 0; }
-.pricing-hourly { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.pricing-hourly label:last-child { grid-column: 1/-1; }
-.pricing-form .form-row { margin-bottom: 12px; }
-.payment-setup { padding: 16px 0 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
-.payment-setup p { margin: 0 0 8px; color: var(--ui-muted); }
-.payment-setup strong { color: var(--text); }
-.payment-setup .row-actions { margin-top: 14px; }
-.payments-filters { margin-bottom: 18px; }
-.payments-filters > button { align-self: end; white-space: nowrap; }
-.payments-page > .card-heading { flex-wrap: wrap; }
-.workflow-alternatives { margin: 0 0 20px; }
-.workflow-alternatives > summary { color: var(--text); font-size: 13px; cursor: pointer; padding: 10px 0; }
-.workflow-alternatives .qr-lookup { margin-top: 10px; }
-.ai-scan-analysis { margin-top: 12px; font-size: 12px; }
-.ai-scan-analysis summary { cursor: pointer; padding: 8px 0; }
-.workflow-grid .upload-card { min-height: 320px; }
-.workflow-grid .drop-zone { min-height: 220px; }
-.quick-history { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); }
-.quick-history table { min-width: 660px; }
-.quick-history td { white-space: nowrap; }
-.quick-qr-dialog { max-width: 720px; }
-.quick-qr-dialog .form-row { margin-bottom: 18px; }
-.quick-qr-dialog .form-row > button { align-self: end; flex-shrink: 0; }
-.quick-qr-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 24px; margin: 20px 0; align-items: center; }
-.quick-qr-layout img { margin: 0; }
-.payment-ticket-id { display: block; margin-top: 5px; color: var(--ui-muted); font-size: 11px; overflow-wrap: anywhere; }
-.mb-transfer-panel { margin-top: 16px; }
-.mb-transfer-qr { display: block; width: 260px; max-width: 100%; margin: 16px 0; background: white; border-radius: 8px; }
-.mb-code { font-weight: 700; overflow-wrap: anywhere; }
-.mb-settings { max-width: 900px; }
-.mb-settings-form { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
-.mb-captcha-form { display: grid; gap: 12px; justify-items: start; margin-top: 24px; }
-.mb-captcha-form input { border: 1px solid var(--ui-input-border); padding: 10px; border-radius: 8px; color: var(--text); background: var(--surface); font-size: 16px; max-width: 240px; }
-.mb-captcha-form img { max-width: 280px; background: white; }
-.mb-qr-display { display: none; }
-.ticket-dialog[data-payment-mode="mb"] .mb-qr-display { display: block; }
-.mb-qr-display .mb-transfer-qr { margin-bottom: 6px; }
-.ticket-dialog[data-payment-mode="mb"] .ticket-pass .ticket-qr-image,
-.ticket-dialog[data-payment-mode="mb"] .ticket-pass .row-actions { display: none; }
-@media(max-width:700px) {
-  .quick-history .log-pagination { flex-wrap: wrap; }
-  .quick-history .log-pagination > span { order: -1; width: 100%; text-align: center; }
-  .quick-history .log-pagination > button { white-space: nowrap; }
-  .quick-qr-layout { grid-template-columns: 1fr; }
-  .ticket-dialog { padding: 20px; }
-  .ticket-layout, .pricing-grid, .pricing-hourly { grid-template-columns: 1fr; }
-  .ticket-charge { padding-top: 20px; border-top: 1px solid var(--border); }
-  .pricing-form + .pricing-form { border-top: 1px solid var(--border); padding-top: 24px; }
+.ticket-dialog {
+  width: min(800px, calc(100vw - 32px));
+  max-height: 92svh;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--surface);
+  overflow: auto;
+}
+.ticket-dialog::backdrop {
+  background: #07111caa;
+}
+.ticket-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.ticket-dialog-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.ticket-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.ticket-layout > section {
+  min-width: 0;
+}
+.ticket-pass h3,
+.ticket-charge h3 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+.ticket-plate {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 12px 0;
+}
+.ticket-qr-image {
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  background: white;
+  border-radius: 8px;
+}
+.ticket-code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ticket-facts {
+  font-size: 13px;
+  margin: 16px 0;
+}
+.ticket-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ticket-facts dt {
+  color: var(--ui-muted);
+  flex-shrink: 0;
+}
+.ticket-facts dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.ticket-note,
+.pricing-intro {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ui-muted);
+}
+.ticket-amount {
+  display: block;
+  margin: 16px 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+.billing-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 16px 0;
+}
+.billing-check input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+.ticket-action {
+  white-space: nowrap;
+}
+.qr-lookup {
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.qr-lookup > label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.qr-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.qr-input-row input {
+  min-width: 0;
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid var(--ui-input-border);
+  padding: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.qr-input-row .btn {
+  flex-shrink: 0;
+}
+.qr-camera-panel {
+  margin-top: 16px;
+}
+.qr-camera-panel video {
+  width: 100%;
+  max-height: 250px;
+  background: #111;
+  border-radius: 10px;
+}
+.qr-camera-panel .btn {
+  margin-top: 10px;
+}
+.pricing-intro {
+  max-width: 75ch;
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+  margin-top: 28px;
+}
+.pricing-form {
+  min-width: 0;
+}
+.pricing-hourly {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.pricing-hourly label:last-child {
+  grid-column: 1/-1;
+}
+.pricing-form .form-row {
+  margin-bottom: 12px;
+}
+.payment-setup {
+  padding: 16px 0 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.payment-setup p {
+  margin: 0 0 8px;
+  color: var(--ui-muted);
+}
+.payment-setup strong {
+  color: var(--text);
+}
+.payment-setup .row-actions {
+  margin-top: 14px;
+}
+.payments-filters {
+  margin-bottom: 18px;
+}
+.payments-filters > button {
+  align-self: end;
+  white-space: nowrap;
+}
+.payments-page > .card-heading {
+  flex-wrap: wrap;
+}
+.workflow-alternatives {
+  margin: 0 0 20px;
+}
+.workflow-alternatives > summary {
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 10px 0;
+}
+.workflow-alternatives .qr-lookup {
+  margin-top: 10px;
+}
+.ai-scan-analysis {
+  margin-top: 12px;
+  font-size: 12px;
+}
+.ai-scan-analysis summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.workflow-grid .upload-card {
+  min-height: 320px;
+}
+.workflow-grid .drop-zone {
+  min-height: 220px;
+}
+.quick-history {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.quick-history table {
+  min-width: 660px;
+}
+.quick-history td {
+  white-space: nowrap;
+}
+.quick-qr-dialog {
+  max-width: 720px;
+}
+.quick-qr-dialog .form-row {
+  margin-bottom: 18px;
+}
+.quick-qr-dialog .form-row > button {
+  align-self: end;
+  flex-shrink: 0;
+}
+.quick-qr-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  margin: 20px 0;
+  align-items: center;
+}
+.quick-qr-layout img {
+  margin: 0;
+}
+.payment-ticket-id {
+  display: block;
+  margin-top: 5px;
+  color: var(--ui-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.mb-transfer-panel {
+  margin-top: 16px;
+}
+.mb-transfer-qr {
+  display: block;
+  width: 260px;
+  max-width: 100%;
+  margin: 16px 0;
+  background: white;
+  border-radius: 8px;
+}
+.mb-code {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.mb-settings {
+  max-width: 900px;
+}
+.mb-settings-form {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.mb-captcha-form {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  margin-top: 24px;
+}
+.mb-captcha-form input {
+  border: 1px solid var(--ui-input-border);
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 16px;
+  max-width: 240px;
+}
+.mb-captcha-form img {
+  max-width: 280px;
+  background: white;
+}
+.mb-qr-display {
+  display: none;
+}
+.ticket-dialog[data-payment-mode='mb'] .mb-qr-display {
+  display: block;
+}
+.mb-qr-display .mb-transfer-qr {
+  margin-bottom: 6px;
+}
+.ticket-dialog[data-payment-mode='mb'] .ticket-pass .ticket-qr-image,
+.ticket-dialog[data-payment-mode='mb'] .ticket-pass .row-actions {
+  display: none;
+}
+@media (max-width: 700px) {
+  .quick-history .log-pagination {
+    flex-wrap: wrap;
+  }
+  .quick-history .log-pagination > span {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+  .quick-history .log-pagination > button {
+    white-space: nowrap;
+  }
+  .quick-qr-layout {
+    grid-template-columns: 1fr;
+  }
+  .ticket-dialog {
+    padding: 20px;
+  }
+  .ticket-layout,
+  .pricing-grid,
+  .pricing-hourly {
+    grid-template-columns: 1fr;
+  }
+  .ticket-charge {
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .pricing-form + .pricing-form {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
 }
 @media print {
-  body.printing-quick-receipt > :not(#quick-qr-dialog) { display:none !important; }
-  body.printing-quick-receipt #quick-qr-dialog { display:block !important;position:static;width:100%;max-height:none;overflow:visible;border:0;background:white;color:black; }
+  body.printing-quick-receipt > :not(#quick-qr-dialog) {
+    display: none !important;
+  }
+  body.printing-quick-receipt #quick-qr-dialog {
+    display: block !important;
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    background: white;
+    color: black;
+  }
   body.printing-quick-receipt #quick-qr-dialog .ticket-note,
-  body.printing-quick-receipt #quick-qr-dialog dt { color:#333 !important; }
-  body.printing-quick-receipt #quick-qr-dialog .badge { color:#111 !important;background:transparent !important; }
+  body.printing-quick-receipt #quick-qr-dialog dt {
+    color: #333 !important;
+  }
+  body.printing-quick-receipt #quick-qr-dialog .badge {
+    color: #111 !important;
+    background: transparent !important;
+  }
   body.printing-quick-receipt #quick-qr-dialog .no-print,
   body.printing-quick-receipt #quick-qr-form,
-  body.printing-quick-receipt #quick-qr-dialog .ticket-dialog-header { display:none !important; }
-  body.printing-ticket { background: white !important; color: black !important; }
-  body.printing-ticket > :not(#ticket-dialog) { display: none !important; }
-  body.printing-ticket #ticket-dialog { display: block !important; position: static; width: 100%; max-height: none; overflow: visible; border: 0; color: black; background: white; padding: 0; }
-  body.printing-ticket #ticket-dialog .no-print, body.printing-ticket .ticket-dialog-header { display: none !important; }
-  body.printing-ticket .ticket-note, body.printing-ticket .ticket-facts dt { color: #333; }
-  body.printing-ticket .ticket-layout { grid-template-columns: 1fr 1fr; }
-  body.printing-ticket .ticket-qr-image { width: 55mm; }
-  body.printing-ticket #ticket-dialog .ticket-qr-image { display: block !important; }
-  body.printing-ticket .mb-qr-display { display: none !important; }
+  body.printing-quick-receipt #quick-qr-dialog .ticket-dialog-header {
+    display: none !important;
+  }
+  body.printing-ticket {
+    background: white !important;
+    color: black !important;
+  }
+  body.printing-ticket > :not(#ticket-dialog) {
+    display: none !important;
+  }
+  body.printing-ticket #ticket-dialog {
+    display: block !important;
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    color: black;
+    background: white;
+    padding: 0;
+  }
+  body.printing-ticket #ticket-dialog .no-print,
+  body.printing-ticket .ticket-dialog-header {
+    display: none !important;
+  }
+  body.printing-ticket .ticket-note,
+  body.printing-ticket .ticket-facts dt {
+    color: #333;
+  }
+  body.printing-ticket .ticket-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+  body.printing-ticket .ticket-qr-image {
+    width: 55mm;
+  }
+  body.printing-ticket #ticket-dialog .ticket-qr-image {
+    display: block !important;
+  }
+  body.printing-ticket .mb-qr-display {
+    display: none !important;
+  }
 }

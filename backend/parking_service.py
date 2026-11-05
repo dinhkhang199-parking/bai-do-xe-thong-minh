@@ -6,12 +6,21 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
+from backend.billing import (
+    LOCAL_TZ,
+    VEHICLE_TYPES,
+    BillingError,
+    init_billing_schema,
+    register_ticket,
+)
 from backend.config import DB_PATH
-from backend.db import append_audit_log, append_parking_event, AUDIT_LOGS_SCHEMA, PARKING_EVENTS_SCHEMA
-from backend.billing import register_ticket, init_billing_schema, VEHICLE_TYPES, BillingError, LOCAL_TZ
+from backend.db import (
+    AUDIT_LOGS_SCHEMA,
+    PARKING_EVENTS_SCHEMA,
+    append_audit_log,
+    append_parking_event,
+)
 from backend.plate_format import format_confirmed_plate, normalize_generic_plate_text
-
-
 
 ACTIVE_STATUS = "IN_PARKING"
 COMPLETED_STATUS = "COMPLETED"
@@ -34,7 +43,7 @@ def create_ticket_id() -> str:
 
 def _utc_like_timestamp() -> str:
     # Keep the legacy helper name, but never store an ambiguous host-local time.
-    return datetime.now(LOCAL_TZ).isoformat(timespec='seconds')
+    return datetime.now(LOCAL_TZ).isoformat(timespec="seconds")
 
 
 def _sanitize_plate_text(plate_text: str | None) -> str:
@@ -106,7 +115,12 @@ def _json_details(**details) -> str:
     return json.dumps({k: v for k, v in details.items() if v is not None}, ensure_ascii=False)
 
 
-def _review_reason(confidence: float | None, manual_override: bool, mismatch: bool = False, ocr_review_required: bool = False) -> str | None:
+def _review_reason(
+    confidence: float | None,
+    manual_override: bool,
+    mismatch: bool = False,
+    ocr_review_required: bool = False,
+) -> str | None:
     reasons: list[str] = []
     if mismatch:
         reasons.append("PLATE_MISMATCH")
@@ -117,20 +131,36 @@ def _review_reason(confidence: float | None, manual_override: bool, mismatch: bo
     return ";".join(reasons) or None
 
 
-def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path: str | None = None, plate_path: str | None = None, ocr_confidence: float | None = None, ocr_engine: str | None = None, ocr_text: str | None = None, manual_override: bool = False, ocr_review_required: bool = False, actor: Any | None = None, vehicle_type: str = "motorcycle") -> dict[str, Any]:
+def vehicle_entry(
+    plate_text: str,
+    image_path: str | None = None,
+    detected_path: str | None = None,
+    plate_path: str | None = None,
+    ocr_confidence: float | None = None,
+    ocr_engine: str | None = None,
+    ocr_text: str | None = None,
+    manual_override: bool = False,
+    ocr_review_required: bool = False,
+    actor: Any | None = None,
+    vehicle_type: str = "motorcycle",
+) -> dict[str, Any]:
     if vehicle_type not in VEHICLE_TYPES:
-        raise BillingError("Loại xe không hợp lệ.",400)
+        raise BillingError("Loại xe không hợp lệ.", 400)
     clean_plate = _sanitize_plate_text(plate_text)
     normalized_plate = _normalized_plate_text(clean_plate)
     if not normalized_plate:
         return {"success": False, "message": "Invalid plate text", "plate_entry": clean_plate}
 
     confidence = _safe_confidence(ocr_confidence)
-    review_reason = _review_reason(confidence, manual_override, ocr_review_required=ocr_review_required)
+    review_reason = _review_reason(
+        confidence, manual_override, ocr_review_required=ocr_review_required
+    )
     review_required = bool(review_reason)
 
     with _write_transaction() as conn:
-        if not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ticket_billing'").fetchone():
+        if not conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='ticket_billing'"
+        ).fetchone():
             # Compatibility for a legacy DB opened directly by the domain service.
             conn.execute(AUDIT_LOGS_SCHEMA)
             conn.execute(PARKING_EVENTS_SCHEMA)
@@ -158,7 +188,9 @@ def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path:
 
         ticket_id = create_ticket_id()
         entry_time = _utc_like_timestamp()
-        existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(parking_logs)").fetchall()}
+        existing_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(parking_logs)").fetchall()
+        }
         required_columns = {
             "review_required": "INTEGER NOT NULL DEFAULT 0",
             "review_reason": "TEXT",
@@ -172,18 +204,60 @@ def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path:
         for column_name, column_type in required_columns.items():
             if column_name not in existing_columns:
                 cursor.execute(f"ALTER TABLE parking_logs ADD COLUMN {column_name} {column_type}")
-        existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(parking_logs)").fetchall()}
+        existing_columns = {
+            row[1] for row in cursor.execute("PRAGMA table_info(parking_logs)").fetchall()
+        }
         insert_columns = [
-            "ticket_id", "plate_entry", "plate_exit", "entry_time", "exit_time", "status", "match_result",
-            "entry_image_path", "entry_detected_path", "entry_plate_path", "exit_image_path", "exit_detected_path", "exit_plate_path",
-            "entry_ocr_confidence", "exit_ocr_confidence", "entry_ocr_engine", "exit_ocr_engine", "entry_ocr_text", "exit_ocr_text",
-            "entry_manual_override", "exit_manual_override", "review_required", "review_reason", "entry_actor",
+            "ticket_id",
+            "plate_entry",
+            "plate_exit",
+            "entry_time",
+            "exit_time",
+            "status",
+            "match_result",
+            "entry_image_path",
+            "entry_detected_path",
+            "entry_plate_path",
+            "exit_image_path",
+            "exit_detected_path",
+            "exit_plate_path",
+            "entry_ocr_confidence",
+            "exit_ocr_confidence",
+            "entry_ocr_engine",
+            "exit_ocr_engine",
+            "entry_ocr_text",
+            "exit_ocr_text",
+            "entry_manual_override",
+            "exit_manual_override",
+            "review_required",
+            "review_reason",
+            "entry_actor",
         ]
         insert_values = [
-            ticket_id, clean_plate, None, entry_time, None, ACTIVE_STATUS, PENDING_MATCH,
-            image_path, detected_path, plate_path, None, None, None,
-            confidence, None, ocr_engine, None, (ocr_text or "").strip() or None, None,
-            1 if manual_override else 0, 0, 1 if review_required else 0, review_reason, _actor_name(actor),
+            ticket_id,
+            clean_plate,
+            None,
+            entry_time,
+            None,
+            ACTIVE_STATUS,
+            PENDING_MATCH,
+            image_path,
+            detected_path,
+            plate_path,
+            None,
+            None,
+            None,
+            confidence,
+            None,
+            ocr_engine,
+            None,
+            (ocr_text or "").strip() or None,
+            None,
+            1 if manual_override else 0,
+            0,
+            1 if review_required else 0,
+            review_reason,
+            _actor_name(actor),
         ]
         if "plate_number" in existing_columns and "plate_number" not in insert_columns:
             insert_columns.insert(1, "plate_number")
@@ -194,15 +268,56 @@ def vehicle_entry(plate_text: str, image_path: str | None = None, detected_path:
             insert_values.insert(time_index + 1, entry_time)
         placeholders = ", ".join(["?"] * len(insert_columns))
         columns_sql = ", ".join(insert_columns)
-        cursor.execute(f"INSERT INTO parking_logs ({columns_sql}) VALUES ({placeholders})", tuple(insert_values))
-        register_ticket(conn,ticket_id,vehicle_type,entry_time)
+        cursor.execute(
+            f"INSERT INTO parking_logs ({columns_sql}) VALUES ({placeholders})",
+            tuple(insert_values),
+        )
+        register_ticket(conn, ticket_id, vehicle_type, entry_time)
 
-        append_parking_event(ticket_id, "VEHICLE_ENTRY", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "review_reason": review_reason}, connection=conn)
-        append_audit_log(_actor_name(actor), _actor_role(actor), "vehicle.entry", target_type="ticket", target_id=ticket_id, details_json=_json_details(plate=clean_plate, review_reason=review_reason), connection=conn)
-    return {"success": True, "ticket_id": ticket_id, "plate_entry": clean_plate, "entry_time": entry_time, "status": ACTIVE_STATUS, "review_required": review_required, "review_reason": review_reason}
+        append_parking_event(
+            ticket_id,
+            "VEHICLE_ENTRY",
+            actor_username=_actor_name(actor),
+            actor_role=_actor_role(actor),
+            plate_text=clean_plate,
+            confidence=confidence,
+            source=ocr_engine or "manual",
+            details={"manual_override": manual_override, "review_reason": review_reason},
+            connection=conn,
+        )
+        append_audit_log(
+            _actor_name(actor),
+            _actor_role(actor),
+            "vehicle.entry",
+            target_type="ticket",
+            target_id=ticket_id,
+            details_json=_json_details(plate=clean_plate, review_reason=review_reason),
+            connection=conn,
+        )
+    return {
+        "success": True,
+        "ticket_id": ticket_id,
+        "plate_entry": clean_plate,
+        "entry_time": entry_time,
+        "status": ACTIVE_STATUS,
+        "review_required": review_required,
+        "review_reason": review_reason,
+    }
 
 
-def vehicle_exit(ticket_id: str, plate_text: str, image_path: str | None = None, detected_path: str | None = None, plate_path: str | None = None, ocr_confidence: float | None = None, ocr_engine: str | None = None, ocr_text: str | None = None, manual_override: bool = False, ocr_review_required: bool = False, actor: Any | None = None) -> dict[str, Any]:
+def vehicle_exit(
+    ticket_id: str,
+    plate_text: str,
+    image_path: str | None = None,
+    detected_path: str | None = None,
+    plate_path: str | None = None,
+    ocr_confidence: float | None = None,
+    ocr_engine: str | None = None,
+    ocr_text: str | None = None,
+    manual_override: bool = False,
+    ocr_review_required: bool = False,
+    actor: Any | None = None,
+) -> dict[str, Any]:
     clean_ticket_id = (ticket_id or "").strip()
     if not clean_ticket_id:
         return {"success": False, "message": "Ticket ID is required"}
@@ -214,7 +329,10 @@ def vehicle_exit(ticket_id: str, plate_text: str, image_path: str | None = None,
     confidence = _safe_confidence(ocr_confidence)
     with _write_transaction() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT ticket_id, plate_entry, status, review_required FROM parking_logs WHERE ticket_id = ?", (clean_ticket_id,))
+        cursor.execute(
+            "SELECT ticket_id, plate_entry, status, review_required FROM parking_logs WHERE ticket_id = ?",
+            (clean_ticket_id,),
+        )
         row = cursor.fetchone()
         if row is None:
             return {"success": False, "message": "Ticket ID not found"}
@@ -225,12 +343,20 @@ def vehicle_exit(ticket_id: str, plate_text: str, image_path: str | None = None,
         if status == CANCELLED_STATUS:
             return {"success": False, "message": "Ticket is cancelled"}
         if status == NEEDS_REVIEW_STATUS:
-            return {"success": False, "message": "Ticket requires review before checkout can continue"}
+            return {
+                "success": False,
+                "message": "Ticket requires review before checkout can continue",
+            }
 
         exit_time = _utc_like_timestamp()
         is_match = _normalized_plate_text(plate_entry) == _normalized_plate_text(clean_plate)
         match_result = MATCH if is_match else MISMATCH
-        review_reason = _review_reason(confidence, manual_override, mismatch=not is_match, ocr_review_required=(ocr_review_required or bool(entry_review_required)))
+        review_reason = _review_reason(
+            confidence,
+            manual_override,
+            mismatch=not is_match,
+            ocr_review_required=(ocr_review_required or bool(entry_review_required)),
+        )
         review_required = bool(review_reason)
         new_status = NEEDS_REVIEW_STATUS if review_required else COMPLETED_STATUS
         cursor.execute(
@@ -241,28 +367,98 @@ def vehicle_exit(ticket_id: str, plate_text: str, image_path: str | None = None,
                 exit_ocr_text = ?, exit_manual_override = ?, review_required = ?, review_reason = ?, exit_actor = ?
             WHERE ticket_id = ? AND status = ?
             """,
-            (clean_plate, exit_time, new_status, match_result, image_path, detected_path, plate_path, confidence, ocr_engine, (ocr_text or "").strip() or None, 1 if manual_override else 0, 1 if review_required else 0, review_reason, _actor_name(actor), clean_ticket_id, ACTIVE_STATUS),
+            (
+                clean_plate,
+                exit_time,
+                new_status,
+                match_result,
+                image_path,
+                detected_path,
+                plate_path,
+                confidence,
+                ocr_engine,
+                (ocr_text or "").strip() or None,
+                1 if manual_override else 0,
+                1 if review_required else 0,
+                review_reason,
+                _actor_name(actor),
+                clean_ticket_id,
+                ACTIVE_STATUS,
+            ),
         )
         if cursor.rowcount == 0:
             return {"success": False, "message": "Vehicle already checked out"}
 
-        append_parking_event(clean_ticket_id, "VEHICLE_EXIT", actor_username=_actor_name(actor), actor_role=_actor_role(actor), plate_text=clean_plate, confidence=confidence, source=ocr_engine or "manual", details={"manual_override": manual_override, "match_result": match_result, "review_reason": review_reason}, connection=conn)
-        append_audit_log(_actor_name(actor), _actor_role(actor), "vehicle.exit", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(plate_entry=plate_entry, plate_exit=clean_plate, match_result=match_result, status=new_status), connection=conn)
-    return {"success": True, "ticket_id": clean_ticket_id, "plate_entry": plate_entry, "plate_exit": clean_plate, "exit_time": exit_time, "match_result": match_result, "status": new_status, "review_required": review_required, "review_reason": review_reason}
+        append_parking_event(
+            clean_ticket_id,
+            "VEHICLE_EXIT",
+            actor_username=_actor_name(actor),
+            actor_role=_actor_role(actor),
+            plate_text=clean_plate,
+            confidence=confidence,
+            source=ocr_engine or "manual",
+            details={
+                "manual_override": manual_override,
+                "match_result": match_result,
+                "review_reason": review_reason,
+            },
+            connection=conn,
+        )
+        append_audit_log(
+            _actor_name(actor),
+            _actor_role(actor),
+            "vehicle.exit",
+            target_type="ticket",
+            target_id=clean_ticket_id,
+            details_json=_json_details(
+                plate_entry=plate_entry,
+                plate_exit=clean_plate,
+                match_result=match_result,
+                status=new_status,
+            ),
+            connection=conn,
+        )
+    return {
+        "success": True,
+        "ticket_id": clean_ticket_id,
+        "plate_entry": plate_entry,
+        "plate_exit": clean_plate,
+        "exit_time": exit_time,
+        "match_result": match_result,
+        "status": new_status,
+        "review_required": review_required,
+        "review_reason": review_reason,
+    }
 
 
-def resolve_review_ticket(ticket_id: str, resolution: str, actor: Any | None = None, note: str | None = None) -> dict[str, Any]:
+def resolve_review_ticket(
+    ticket_id: str, resolution: str, actor: Any | None = None, note: str | None = None
+) -> dict[str, Any]:
     clean_ticket_id = (ticket_id or "").strip()
     clean_resolution = (resolution or "").strip().upper()
     if clean_resolution not in {"APPROVE_EXIT", "REJECT_EXIT", "MARK_MATCH"}:
         return {"success": False, "message": "Invalid resolution"}
 
-    new_status = COMPLETED_STATUS if clean_resolution in {"APPROVE_EXIT", "MARK_MATCH"} else NEEDS_REVIEW_STATUS
-    match_result = REVIEW_RESOLVED_MATCH if clean_resolution == "MARK_MATCH" else (REVIEW_RESOLVED_APPROVED if clean_resolution == "APPROVE_EXIT" else REVIEW_RESOLVED_REJECTED)
+    new_status = (
+        COMPLETED_STATUS
+        if clean_resolution in {"APPROVE_EXIT", "MARK_MATCH"}
+        else NEEDS_REVIEW_STATUS
+    )
+    match_result = (
+        REVIEW_RESOLVED_MATCH
+        if clean_resolution == "MARK_MATCH"
+        else (
+            REVIEW_RESOLVED_APPROVED
+            if clean_resolution == "APPROVE_EXIT"
+            else REVIEW_RESOLVED_REJECTED
+        )
+    )
     resolved_at = _utc_like_timestamp()
     with _write_transaction() as conn:
         cursor = conn.cursor()
-        row = cursor.execute("SELECT status FROM parking_logs WHERE ticket_id = ?", (clean_ticket_id,)).fetchone()
+        row = cursor.execute(
+            "SELECT status FROM parking_logs WHERE ticket_id = ?", (clean_ticket_id,)
+        ).fetchone()
         if row is None:
             return {"success": False, "message": "Ticket ID not found"}
         if row[0] != NEEDS_REVIEW_STATUS:
@@ -273,21 +469,55 @@ def resolve_review_ticket(ticket_id: str, resolution: str, actor: Any | None = N
             SET status = ?, match_result = ?, review_required = ?, resolved_by = ?, resolved_at = ?, resolution_note = ?
             WHERE ticket_id = ? AND status = ?
             """,
-            (new_status, match_result, 0 if new_status == COMPLETED_STATUS else 1, _actor_name(actor), resolved_at, (note or "").strip() or None, clean_ticket_id, NEEDS_REVIEW_STATUS),
+            (
+                new_status,
+                match_result,
+                0 if new_status == COMPLETED_STATUS else 1,
+                _actor_name(actor),
+                resolved_at,
+                (note or "").strip() or None,
+                clean_ticket_id,
+                NEEDS_REVIEW_STATUS,
+            ),
         )
-        append_parking_event(clean_ticket_id, "REVIEW_RESOLVED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"resolution": clean_resolution, "note": note}, connection=conn)
-        append_audit_log(_actor_name(actor), _actor_role(actor), "ticket.resolve", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(resolution=clean_resolution, note=note), connection=conn)
-    return {"success": True, "ticket_id": clean_ticket_id, "status": new_status, "match_result": match_result, "resolved_at": resolved_at}
+        append_parking_event(
+            clean_ticket_id,
+            "REVIEW_RESOLVED",
+            actor_username=_actor_name(actor),
+            actor_role=_actor_role(actor),
+            details={"resolution": clean_resolution, "note": note},
+            connection=conn,
+        )
+        append_audit_log(
+            _actor_name(actor),
+            _actor_role(actor),
+            "ticket.resolve",
+            target_type="ticket",
+            target_id=clean_ticket_id,
+            details_json=_json_details(resolution=clean_resolution, note=note),
+            connection=conn,
+        )
+    return {
+        "success": True,
+        "ticket_id": clean_ticket_id,
+        "status": new_status,
+        "match_result": match_result,
+        "resolved_at": resolved_at,
+    }
 
 
-def cancel_ticket(ticket_id: str, actor: Any | None = None, reason: str | None = None) -> dict[str, Any]:
+def cancel_ticket(
+    ticket_id: str, actor: Any | None = None, reason: str | None = None
+) -> dict[str, Any]:
     clean_ticket_id = (ticket_id or "").strip()
     clean_reason = (reason or "").strip()
     if not clean_reason:
         return {"success": False, "message": "Cancel reason is required"}
     with _write_transaction() as conn:
         cursor = conn.cursor()
-        row = cursor.execute("SELECT status FROM parking_logs WHERE ticket_id = ?", (clean_ticket_id,)).fetchone()
+        row = cursor.execute(
+            "SELECT status FROM parking_logs WHERE ticket_id = ?", (clean_ticket_id,)
+        ).fetchone()
         if row is None:
             return {"success": False, "message": "Ticket ID not found"}
         if row[0] in FINAL_STATUSES:
@@ -296,8 +526,23 @@ def cancel_ticket(ticket_id: str, actor: Any | None = None, reason: str | None =
             "UPDATE parking_logs SET status = ?, cancel_reason = ?, review_required = 0 WHERE ticket_id = ?",
             (CANCELLED_STATUS, clean_reason, clean_ticket_id),
         )
-        append_parking_event(clean_ticket_id, "TICKET_CANCELLED", actor_username=_actor_name(actor), actor_role=_actor_role(actor), details={"reason": clean_reason}, connection=conn)
-        append_audit_log(_actor_name(actor), _actor_role(actor), "ticket.cancel", target_type="ticket", target_id=clean_ticket_id, details_json=_json_details(reason=clean_reason), connection=conn)
+        append_parking_event(
+            clean_ticket_id,
+            "TICKET_CANCELLED",
+            actor_username=_actor_name(actor),
+            actor_role=_actor_role(actor),
+            details={"reason": clean_reason},
+            connection=conn,
+        )
+        append_audit_log(
+            _actor_name(actor),
+            _actor_role(actor),
+            "ticket.cancel",
+            target_type="ticket",
+            target_id=clean_ticket_id,
+            details_json=_json_details(reason=clean_reason),
+            connection=conn,
+        )
     return {"success": True, "ticket_id": clean_ticket_id, "status": CANCELLED_STATUS}
 
 

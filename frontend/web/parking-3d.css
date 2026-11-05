@@ -1,37 +1,111 @@
 .scene-toggle {
-  position: absolute; top: 28px; left: 28px; z-index: 4;
-  min-height: 44px; padding: 10px 16px; border: 1px solid #54728e;
-  border-radius: 10px; color: #d4eafa; background: #12253ee8;
-  font-size: 13px; font-weight: 600;
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 4;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #54728e;
+  border-radius: 10px;
+  color: #d4eafa;
+  background: #12253ee8;
+  font-size: 13px;
+  font-weight: 600;
 }
-.scene-toggle[aria-pressed="true"] { color: #112b42; background: #a2e0ed; }
-.login-motion-toggle { top: 82px; display: inline-flex; align-items: center; gap: 8px; }
-.login-motion-toggle svg { width: 16px; height: 16px; }
-.journey-next { left: 134px; }
-.turbo-toggle { left: 250px; min-width: 88px; }
-[data-theme="light"] #turbo-toggle { display: none; }
-[data-theme="light"] .scene-toggle { color: #754b64; border-color: #c7a58f; background: #fff4e8; }
-[data-theme="light"] .scene-toggle[aria-pressed="true"] { color: #67402f; background: #ffcf96; }
+.scene-toggle[aria-pressed='true'] {
+  color: #112b42;
+  background: #a2e0ed;
+}
+.login-motion-toggle {
+  top: 82px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.login-motion-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+.journey-next {
+  left: 134px;
+}
+.turbo-toggle {
+  left: 250px;
+  min-width: 88px;
+}
+[data-theme='light'] #turbo-toggle {
+  display: none;
+}
+[data-theme='light'] .scene-toggle {
+  color: #754b64;
+  border-color: #c7a58f;
+  background: #fff4e8;
+}
+[data-theme='light'] .scene-toggle[aria-pressed='true'] {
+  color: #67402f;
+  background: #ffcf96;
+}
 .login-diorama {
-  position: absolute; inset: 0 auto 0 0; width: 60%; z-index: 0;
-  pointer-events: none; opacity: 0;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
   mask-image: linear-gradient(90deg, #000 0 88%, transparent);
   -webkit-mask-image: linear-gradient(90deg, #000 0 88%, transparent);
 }
-.login-diorama canvas { width: 100%; height: 100%; display: block; }
-.scene-3d-active .login-diorama { opacity: 1; }
-.scene-3d-active .car-scene { visibility: hidden; }
-.scene-3d-active .login-scene .snowfield { display: none; }
-@media (max-width: 640px) {
-  .scene-toggle { top: 14px; left: 14px; padding: 9px 12px; }
-  .login-motion-toggle { top: 72px; }
-  .journey-next { top: 72px; left: auto; right: 14px; }
-  .turbo-toggle { top: 72px; left: 132px; min-width: 76px; }
-  .login-diorama { width: 100%; height: max(220px, 36svh); mask-image: none; -webkit-mask-image: none; }
+.login-diorama canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
-.scene-3d-active .login-scene .snowfield { display: block; }
-.motion-paused .scene-3d-active .login-scene .snowfield { display: none; }
-@media (max-width: 640px) and (max-height: 700px) { .login-diorama { height: 180px; } }
+.scene-3d-active .login-diorama {
+  opacity: 1;
+}
+.scene-3d-active .car-scene {
+  visibility: hidden;
+}
+.scene-3d-active .login-scene .snowfield {
+  display: none;
+}
+@media (max-width: 640px) {
+  .scene-toggle {
+    top: 14px;
+    left: 14px;
+    padding: 9px 12px;
+  }
+  .login-motion-toggle {
+    top: 72px;
+  }
+  .journey-next {
+    top: 72px;
+    left: auto;
+    right: 14px;
+  }
+  .turbo-toggle {
+    top: 72px;
+    left: 132px;
+    min-width: 76px;
+  }
+  .login-diorama {
+    width: 100%;
+    height: max(220px, 36svh);
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}
+.scene-3d-active .login-scene .snowfield {
+  display: block;
+}
+.motion-paused .scene-3d-active .login-scene .snowfield {
+  display: none;
+}
+@media (max-width: 640px) and (max-height: 700px) {
+  .login-diorama {
+    height: 180px;
+  }
+}
 
 /* The illustration owns a grid cell, never the space beneath the form. */
 :root[data-theme] .login-wrap.scene-3d-active {
@@ -68,15 +142,21 @@
     gap: 12px;
     padding: 84px 24px 48px;
   }
-  .scene-3d-active .login-diorama { height: 100%; }
+  .scene-3d-active .login-diorama {
+    height: 100%;
+  }
   .scene-3d-active .login-card {
     grid-column: 1;
     grid-row: 2;
     width: min(420px, 100%);
     padding: 28px;
   }
-  :root[data-theme="light"] .login-wrap.scene-3d-active { padding-bottom: 96px; }
-  .scene-3d-active .pumpkin-corner svg { max-height: 76px; }
+  :root[data-theme='light'] .login-wrap.scene-3d-active {
+    padding-bottom: 96px;
+  }
+  .scene-3d-active .pumpkin-corner svg {
+    max-height: 76px;
+  }
 }
 @media (max-width: 420px) {
   :root[data-theme] .login-wrap.scene-3d-active {
@@ -84,7 +164,9 @@
     padding-right: 18px;
     grid-template-rows: clamp(150px, 24svh, 210px) auto;
   }
-  .scene-3d-active .login-card { padding: 24px; }
+  .scene-3d-active .login-card {
+    padding: 24px;
+  }
 }
 
 /* Reuse the seasonal pixel world as scenery beyond the little road island. */
@@ -93,19 +175,22 @@
   --login-moon: #c1e6f2;
   --login-crater: #91bfd4;
 }
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   --login-vista-art: url('/static/assets/login-halloween-vista.svg');
   --login-moon: #edbc79;
   --login-crater: #dfa566;
 }
-.login-vista, .login-moon { display: none; }
+.login-vista,
+.login-moon {
+  display: none;
+}
 .journey-ready .login-vista {
   display: block;
   position: absolute;
   inset: 8% 0 0;
   background: var(--login-vista-art) center bottom / cover no-repeat;
   image-rendering: pixelated;
-  opacity: .54;
+  opacity: 0.54;
   mask-image: linear-gradient(180deg, transparent 0%, #000 42%);
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 42%);
 }
@@ -117,18 +202,48 @@
   width: clamp(42px, 5vw, 76px);
   aspect-ratio: 1;
   background: var(--login-moon);
-  clip-path: polygon(25% 0,75% 0,75% 10%,90% 10%,90% 25%,100% 25%,100% 75%,90% 75%,90% 90%,75% 90%,75% 100%,25% 100%,25% 90%,10% 90%,10% 75%,0 75%,0 25%,10% 25%,10% 10%,25% 10%);
+  clip-path: polygon(
+    25% 0,
+    75% 0,
+    75% 10%,
+    90% 10%,
+    90% 25%,
+    100% 25%,
+    100% 75%,
+    90% 75%,
+    90% 90%,
+    75% 90%,
+    75% 100%,
+    25% 100%,
+    25% 90%,
+    10% 90%,
+    10% 75%,
+    0 75%,
+    0 25%,
+    10% 25%,
+    10% 10%,
+    25% 10%
+  );
 }
 .login-moon::after {
   content: '';
   position: absolute;
-  right: 13%; bottom: 16%; width: 22%; height: 27%;
+  right: 13%;
+  bottom: 16%;
+  width: 22%;
+  height: 27%;
   background: var(--login-crater);
   box-shadow: -18px -14px 0 -3px var(--login-crater);
 }
 @media (max-width: 960px) {
-  .journey-ready .login-vista { inset: 16% -20% 0; opacity: .48; }
-  .journey-ready .login-moon { top: 15%; left: 10%; }
+  .journey-ready .login-vista {
+    inset: 16% -20% 0;
+    opacity: 0.48;
+  }
+  .journey-ready .login-moon {
+    top: 15%;
+    left: 10%;
+  }
 }
 
 /* Both renderers use the same responsive stage and a three-minute itinerary. */
@@ -137,63 +252,124 @@
   --journey-height: clamp(300px, 58svh, 600px);
   --journey-width: calc(var(--journey-height) * 12);
 }
-:root[data-theme="light"] { --journey-art: url('/static/assets/uth-route-light.svg?v=bridge-lights-1'); }
+:root[data-theme='light'] {
+  --journey-art: url('/static/assets/uth-route-light.svg?v=bridge-lights-1');
+}
 :root[data-theme] .login-wrap.journey-ready {
   grid-template-columns: minmax(0, 680px) minmax(320px, 420px);
   grid-template-rows: auto;
-  justify-content: center; align-items: center;
+  justify-content: center;
+  align-items: center;
   gap: clamp(24px, 4vw, 80px);
   padding: 104px clamp(24px, 5vw, 120px) 64px;
 }
 .journey-ready .car-scene {
-  position: relative; inset: auto; z-index: 0;
-  grid-column: 1; grid-row: 1; width: 100%; height: var(--journey-height);
+  position: relative;
+  inset: auto;
+  z-index: 0;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: var(--journey-height);
   container-type: inline-size;
   mask-image: linear-gradient(90deg, transparent, #000 4% 96%, transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 4% 96%, transparent);
 }
-.journey-ready .login-card { grid-column: 2; grid-row: 1; width: 100%; margin: 0; padding: 36px; }
+.journey-ready .login-card {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  margin: 0;
+  padding: 36px;
+}
 :root[data-theme] .journey-ready .pixel-landscape {
   --journey-art-height: min(var(--journey-height), 50cqw);
   --journey-width: calc(var(--journey-art-height) * 12);
   inset: auto auto 0 0;
-  width: calc(100% + var(--journey-width)); height: var(--journey-art-height);
-  background: var(--journey-art) repeat-x left bottom / var(--journey-width) var(--journey-art-height);
+  width: calc(100% + var(--journey-width));
+  height: var(--journey-art-height);
+  background: var(--journey-art) repeat-x left bottom / var(--journey-width)
+    var(--journey-art-height);
   animation: uthJourney 180s linear infinite;
 }
-@keyframes uthJourney { to { transform: translateX(calc(-1 * var(--journey-width))); } }
-.journey-ready :is(.pixel-verge,.car-road,.road-markings,.pixel-foreground) { display: none; }
+@keyframes uthJourney {
+  to {
+    transform: translateX(calc(-1 * var(--journey-width)));
+  }
+}
+.journey-ready :is(.pixel-verge, .car-road, .road-markings, .pixel-foreground) {
+  display: none;
+}
 .journey-ready .car-stage {
-  bottom: 1%; left: 48%; width: clamp(150px, 22vw, 260px);
+  bottom: 1%;
+  left: 48%;
+  width: clamp(150px, 22vw, 260px);
   animation: uthCruise 16s ease-in-out infinite;
 }
 @keyframes uthCruise {
-  0%,100% { transform: translateX(-52%); }
-  50% { transform: translateX(-45%); }
+  0%,
+  100% {
+    transform: translateX(-52%);
+  }
+  50% {
+    transform: translateX(-45%);
+  }
 }
-.journey-ready .car { animation: uthSuspension 2s ease-in-out infinite; }
-@keyframes uthSuspension { 50% { transform: translateY(-1px); } }
-.journey-ready .login-vista { display: block; }
+.journey-ready .car {
+  animation: uthSuspension 2s ease-in-out infinite;
+}
+@keyframes uthSuspension {
+  50% {
+    transform: translateY(-1px);
+  }
+}
+.journey-ready .login-vista {
+  display: block;
+}
 .motion-paused #login-view.journey-ready .pixel-landscape {
   animation: uthJourney 180s linear infinite !important;
   animation-play-state: paused !important;
 }
-#login-view.journey-hidden *, #login-view[hidden] * { animation-play-state: paused !important; }
+#login-view.journey-hidden *,
+#login-view[hidden] * {
+  animation-play-state: paused !important;
+}
 @media (max-width: 960px) {
-  :root { --journey-height: clamp(170px, 27svh, 260px); }
+  :root {
+    --journey-height: clamp(170px, 27svh, 260px);
+  }
   :root[data-theme] .login-wrap.journey-ready {
     grid-template-columns: minmax(0, 520px);
     grid-template-rows: var(--journey-height) auto;
-    align-content: center; gap: 12px; padding: 84px 24px 48px;
+    align-content: center;
+    gap: 12px;
+    padding: 84px 24px 48px;
   }
-  .journey-ready .login-card { grid-column: 1; grid-row: 2; width: min(420px, 100%); padding: 28px; }
-  :root[data-theme="light"] .login-wrap.journey-ready { padding-bottom: 96px; }
+  .journey-ready .login-card {
+    grid-column: 1;
+    grid-row: 2;
+    width: min(420px, 100%);
+    padding: 28px;
+  }
+  :root[data-theme='light'] .login-wrap.journey-ready {
+    padding-bottom: 96px;
+  }
 }
 @media (max-width: 420px) {
-  :root { --journey-height: clamp(150px, 24svh, 210px); }
-  :root[data-theme] .login-wrap.journey-ready { padding-left: 18px; padding-right: 18px; }
-  .journey-ready .login-card { padding: 24px; }
+  :root {
+    --journey-height: clamp(150px, 24svh, 210px);
+  }
+  :root[data-theme] .login-wrap.journey-ready {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .journey-ready .login-card {
+    padding: 24px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  :root[data-theme] #login-view.journey-ready .pixel-landscape { animation: none !important; transform: none; }
+  :root[data-theme] #login-view.journey-ready .pixel-landscape {
+    animation: none !important;
+    transform: none;
+  }
 }

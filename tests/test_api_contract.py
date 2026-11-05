@@ -1,12 +1,9 @@
 import pytest
-
-pytestmark = pytest.mark.api
-
-
 from fastapi.testclient import TestClient
-import pandas as pd
 
 import api.main as api_main
+
+pytestmark = pytest.mark.api
 
 
 def test_health_endpoint():
@@ -52,11 +49,13 @@ def test_logs_returns_records_with_token(monkeypatch, log_rows):
 def test_logs_support_pagination(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
-    log_rows([
+    log_rows(
+        [
             {"ticket_id": "T1", "status": "IN_PARKING"},
             {"ticket_id": "T2", "status": "IN_PARKING"},
             {"ticket_id": "T3", "status": "COMPLETED"},
-        ])
+        ]
+    )
     monkeypatch.setattr(api_main, "API_TOKEN", "test-api-token")
 
     response = client.get("/logs?limit=1&offset=1", headers={"x-api-token": "test-api-token"})
@@ -65,45 +64,59 @@ def test_logs_support_pagination(monkeypatch, log_rows):
     assert payload["limit"] == 1
     assert payload["offset"] == 1
     assert payload["total"] == 3
-    assert [{k:r[k] for k in ("ticket_id","status")} for r in payload["items"]] == [{"ticket_id": "T2", "status": "IN_PARKING"}]
+    assert [{k: r[k] for k in ("ticket_id", "status")} for r in payload["items"]] == [
+        {"ticket_id": "T2", "status": "IN_PARKING"}
+    ]
 
 
 def test_logs_support_status_filter(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
-    log_rows([
+    log_rows(
+        [
             {"ticket_id": "T-IN", "status": "IN_PARKING"},
             {"ticket_id": "T-OUT", "status": "COMPLETED"},
-        ])
+        ]
+    )
     monkeypatch.setattr(api_main, "API_TOKEN", "test-api-token")
 
     response = client.get("/logs?status=IN_PARKING", headers={"x-api-token": "test-api-token"})
     assert response.status_code == 200
     payload = response.json()
     assert payload["total"] == 1
-    assert [{k:r[k] for k in ("ticket_id","status")} for r in payload["items"]] == [{"ticket_id": "T-IN", "status": "IN_PARKING"}]
+    assert [{k: r[k] for k in ("ticket_id", "status")} for r in payload["items"]] == [
+        {"ticket_id": "T-IN", "status": "IN_PARKING"}
+    ]
 
 
 def test_logs_support_ticket_id_filter(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
-    log_rows([
+    log_rows(
+        [
             {"ticket_id": "T1", "status": "IN_PARKING"},
             {"ticket_id": "ABC-2", "status": "COMPLETED"},
-        ])
+        ]
+    )
     monkeypatch.setattr(api_main, "API_TOKEN", "test-api-token")
 
     response = client.get("/logs?ticket_id=abc", headers={"x-api-token": "test-api-token"})
 
     assert response.status_code == 200
-    assert [{k:r[k] for k in ("ticket_id","status")} for r in response.json()["items"]] == [{"ticket_id": "ABC-2", "status": "COMPLETED"}]
+    assert [{k: r[k] for k in ("ticket_id", "status")} for r in response.json()["items"]] == [
+        {"ticket_id": "ABC-2", "status": "COMPLETED"}
+    ]
 
 
 def test_logs_accept_bearer_read_access(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
     log_rows([{"ticket_id": "T1"}])
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="viewer", role="viewer"))
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="viewer", role="viewer"),
+    )
 
     response = client.get("/logs", headers={"Authorization": "Bearer test-viewer"})
     assert response.status_code == 200
@@ -126,7 +139,9 @@ def test_logs_prefer_x_api_token_when_present(monkeypatch, log_rows):
     monkeypatch.setattr(api_main, "require_token", fake_require_token)
     monkeypatch.setattr(api_main, "require_bearer_user", fake_require_bearer_user)
 
-    response = client.get("/logs", headers={"x-api-token": "token-present", "Authorization": "Bearer ignored"})
+    response = client.get(
+        "/logs", headers={"x-api-token": "token-present", "Authorization": "Bearer ignored"}
+    )
     assert response.status_code == 200
     assert called == {"token": 1, "bearer": 0}
 
@@ -134,8 +149,14 @@ def test_logs_prefer_x_api_token_when_present(monkeypatch, log_rows):
 def test_active_tickets_accepts_viewer_bearer(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
-    log_rows([{"ticket_id": "T1", "plate_entry": "66-B1 069.99", "entry_time": "2026-04-25T10:00:00"}])
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="viewer", role="viewer"))
+    log_rows(
+        [{"ticket_id": "T1", "plate_entry": "66-B1 069.99", "entry_time": "2026-04-25T10:00:00"}]
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="viewer", role="viewer"),
+    )
 
     response = client.get("/tickets/active", headers={"Authorization": "Bearer viewer-token"})
 
@@ -159,8 +180,20 @@ def test_ocr_hides_internal_paths_by_default(monkeypatch):
     client = TestClient(api_main.app)
 
     monkeypatch.setattr(api_main, "save_uploaded_file", lambda file, prefix: "saved.jpg")
-    monkeypatch.setattr(api_main, "process_plate_image", lambda path: type("P", (), {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8, "text": "66-B1 069.99"}})())
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="viewer", role="viewer"))
+    monkeypatch.setattr(
+        api_main,
+        "process_plate_image",
+        lambda path: type(
+            "P",
+            (),
+            {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8, "text": "66-B1 069.99"}},
+        )(),
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="viewer", role="viewer"),
+    )
     monkeypatch.setattr(api_main, "API_EXPOSE_INTERNAL_PATHS", False)
 
     response = client.post(
@@ -178,8 +211,20 @@ def test_ocr_can_expose_internal_paths_when_enabled(monkeypatch):
     client = TestClient(api_main.app)
 
     monkeypatch.setattr(api_main, "save_uploaded_file", lambda file, prefix: "saved.jpg")
-    monkeypatch.setattr(api_main, "process_plate_image", lambda path: type("P", (), {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8, "text": "66-B1 069.99"}})())
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="viewer", role="viewer"))
+    monkeypatch.setattr(
+        api_main,
+        "process_plate_image",
+        lambda path: type(
+            "P",
+            (),
+            {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8, "text": "66-B1 069.99"}},
+        )(),
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="viewer", role="viewer"),
+    )
     monkeypatch.setattr(api_main, "API_EXPOSE_INTERNAL_PATHS", True)
 
     response = client.post(
@@ -196,7 +241,11 @@ def test_ocr_can_expose_internal_paths_when_enabled(monkeypatch):
 def test_write_endpoint_rejects_viewer(monkeypatch):
     client = TestClient(api_main.app)
 
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="viewer", role="viewer"))
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="viewer", role="viewer"),
+    )
 
     response = client.post(
         "/vehicle/entry",
@@ -210,10 +259,29 @@ def test_write_endpoint_rejects_viewer(monkeypatch):
 def test_write_endpoint_accepts_operator(monkeypatch):
     client = TestClient(api_main.app)
 
-    monkeypatch.setattr(api_main, "process_plate_image", lambda path: type("P", (), {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8}, "plate_text": "66-B1 069.99"})())
+    monkeypatch.setattr(
+        api_main,
+        "process_plate_image",
+        lambda path: type(
+            "P",
+            (),
+            {
+                "ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8},
+                "plate_text": "66-B1 069.99",
+            },
+        )(),
+    )
     monkeypatch.setattr(api_main, "save_uploaded_file", lambda file, prefix: "saved.jpg")
-    monkeypatch.setattr(api_main, "confirm_vehicle_entry", lambda *args, **kwargs: {"success": True, "ticket_id": "T1"})
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="operator", role="operator"))
+    monkeypatch.setattr(
+        api_main,
+        "confirm_vehicle_entry",
+        lambda *args, **kwargs: {"success": True, "ticket_id": "T1"},
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="operator", role="operator"),
+    )
 
     response = client.post(
         "/vehicle/entry",
@@ -240,7 +308,9 @@ def test_write_endpoint_rejects_invalid_bearer(monkeypatch):
 
 
 def test_map_business_failure_validation_error():
-    response = api_main.map_business_failure({"success": False, "message": "Invalid plate text: partial plate"}, resource="ticket")
+    response = api_main.map_business_failure(
+        {"success": False, "message": "Invalid plate text: partial plate"}, resource="ticket"
+    )
 
     assert response.status_code == 400
     assert b"VALIDATION_ERROR" in response.body
@@ -249,10 +319,33 @@ def test_map_business_failure_validation_error():
 def test_vehicle_entry_returns_business_conflict(monkeypatch):
     client = TestClient(api_main.app)
 
-    monkeypatch.setattr(api_main, "process_plate_image", lambda path: type("P", (), {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8}, "plate_text": "66-B1 069.99"})())
+    monkeypatch.setattr(
+        api_main,
+        "process_plate_image",
+        lambda path: type(
+            "P",
+            (),
+            {
+                "ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8},
+                "plate_text": "66-B1 069.99",
+            },
+        )(),
+    )
     monkeypatch.setattr(api_main, "save_uploaded_file", lambda file, prefix: "saved.jpg")
-    monkeypatch.setattr(api_main, "confirm_vehicle_entry", lambda *args, **kwargs: {"success": False, "message": "Vehicle already has an active ticket", "ticket_id": "T1"})
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="admin", role="admin"))
+    monkeypatch.setattr(
+        api_main,
+        "confirm_vehicle_entry",
+        lambda *args, **kwargs: {
+            "success": False,
+            "message": "Vehicle already has an active ticket",
+            "ticket_id": "T1",
+        },
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="admin", role="admin"),
+    )
 
     response = client.post(
         "/vehicle/entry",
@@ -269,10 +362,29 @@ def test_vehicle_entry_returns_business_conflict(monkeypatch):
 def test_vehicle_exit_returns_not_found(monkeypatch):
     client = TestClient(api_main.app)
 
-    monkeypatch.setattr(api_main, "process_plate_image", lambda path: type("P", (), {"ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8}, "plate_text": "66-B1 069.99"})())
+    monkeypatch.setattr(
+        api_main,
+        "process_plate_image",
+        lambda path: type(
+            "P",
+            (),
+            {
+                "ocr": {"annotated_path": "annotated.jpg", "confidence": 0.8},
+                "plate_text": "66-B1 069.99",
+            },
+        )(),
+    )
     monkeypatch.setattr(api_main, "save_uploaded_file", lambda file, prefix: "saved.jpg")
-    monkeypatch.setattr(api_main, "confirm_vehicle_exit", lambda *args, **kwargs: {"success": False, "message": "Ticket ID not found"})
-    monkeypatch.setattr(api_main, "parse_static_bearer_token", lambda token: api_main.AuthUser(username="admin", role="admin"))
+    monkeypatch.setattr(
+        api_main,
+        "confirm_vehicle_exit",
+        lambda *args, **kwargs: {"success": False, "message": "Ticket ID not found"},
+    )
+    monkeypatch.setattr(
+        api_main,
+        "parse_static_bearer_token",
+        lambda token: api_main.AuthUser(username="admin", role="admin"),
+    )
 
     response = client.post(
         "/vehicle/exit",
@@ -290,14 +402,20 @@ def test_vehicle_exit_returns_not_found(monkeypatch):
 def test_logs_support_time_range_filter(monkeypatch, log_rows):
     client = TestClient(api_main.app)
 
-    log_rows([
+    log_rows(
+        [
             {"ticket_id": "T1", "entry_time": "2026-04-25 08:00:00"},
             {"ticket_id": "T2", "entry_time": "2026-04-26 12:00:00"},
             {"ticket_id": "T3", "entry_time": "2026-04-27 18:00:00"},
-        ])
+        ]
+    )
     monkeypatch.setattr(api_main, "API_TOKEN", "test-api-token")
 
-    response = client.get("/logs?from_time=2026-04-26&to_time=2026-04-26", headers={"x-api-token": "test-api-token"})
+    response = client.get(
+        "/logs?from_time=2026-04-26&to_time=2026-04-26", headers={"x-api-token": "test-api-token"}
+    )
 
     assert response.status_code == 200
-    assert [{k:r[k] for k in ("ticket_id","entry_time")} for r in response.json()["items"]] == [{"ticket_id": "T2", "entry_time": "2026-04-26 12:00:00"}]
+    assert [{k: r[k] for k in ("ticket_id", "entry_time")} for r in response.json()["items"]] == [
+        {"ticket_id": "T2", "entry_time": "2026-04-26 12:00:00"}
+    ]

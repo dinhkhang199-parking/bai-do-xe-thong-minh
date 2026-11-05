@@ -1,4 +1,5 @@
 """Metrics for recorded predictions; this module never invents predictions or timing."""
+
 from __future__ import annotations
 
 import csv
@@ -22,7 +23,11 @@ def finite_number(value, *, maximum=None):
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return number if math.isfinite(number) and number >= 0 and (maximum is None or number <= maximum) else None
+    return (
+        number
+        if math.isfinite(number) and number >= 0 and (maximum is None or number <= maximum)
+        else None
+    )
 
 
 def plate_key(value) -> str:
@@ -72,13 +77,19 @@ def compute_benchmark_metrics(rows: list[dict]) -> BenchmarkMetrics:
         if confidence is not None:
             confidences.append(confidence)
     return BenchmarkMetrics(
-        len(rows), labeled, len(rows) - labeled, exact, normalized, unreadable,
+        len(rows),
+        labeled,
+        len(rows) - labeled,
+        exact,
+        normalized,
+        unreadable,
         exact / labeled if labeled else None,
         normalized / labeled if labeled else None,
         unreadable / len(rows) if rows else None,
         statistics.mean(latencies) if latencies else None,
-        sorted(latencies)[math.ceil(.95 * len(latencies)) - 1] if latencies else None,
-        statistics.mean(confidences) if confidences else None, len(latencies),
+        sorted(latencies)[math.ceil(0.95 * len(latencies)) - 1] if latencies else None,
+        statistics.mean(confidences) if confidences else None,
+        len(latencies),
     )
 
 
@@ -86,7 +97,9 @@ def load_benchmark_rows(csv_path: Path) -> list[dict]:
     with csv_path.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if not set(reader.fieldnames or ()) & {"predicted_plate", "prediction", "ocr_text"}:
-            raise ValueError("CSV contains no predictions. Run inference first; ground truth is never a prediction.")
+            raise ValueError(
+                "CSV contains no predictions. Run inference first; ground truth is never a prediction."
+            )
         return list(reader)
 
 

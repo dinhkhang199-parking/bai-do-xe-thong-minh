@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -18,7 +18,14 @@ def write_cv_reports(report_dir: Path = REPORT_DIR) -> tuple[Path, Path]:
     json_path = report_dir / "cv_readiness_report.json"
     md_path = report_dir / "cv_readiness_report.md"
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    lines = ["# CV/OCR Readiness Report", "", f"Pipeline grade: **{payload['pipeline_grade']}**", "", "## Checks", ""]
+    lines = [
+        "# CV/OCR Readiness Report",
+        "",
+        f"Pipeline grade: **{payload['pipeline_grade']}**",
+        "",
+        "## Checks",
+        "",
+    ]
     for item in payload["checks"]:
         lines.append(f"- **{item['name']}**: `{item['status']}` — {item['detail']}")
     lines.extend(["", "## External detector models", ""])

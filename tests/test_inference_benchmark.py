@@ -10,9 +10,9 @@ def test_inference_benchmark_handles_missing_images(tmp_path):
 
     assert payload["field_images_available"] is False
     assert payload["runnable_images"] == 0
-    assert payload['accuracy_measured'] is False
-    assert payload['analysis']['normalized_accuracy'] is None
-    assert payload['average_latency_ms'] is None
+    assert payload["accuracy_measured"] is False
+    assert payload["analysis"]["normalized_accuracy"] is None
+    assert payload["average_latency_ms"] is None
     assert json_path.exists()
     assert md_path.exists()
-    assert 'not measured' in md_path.read_text(encoding='utf8')
+    assert "not measured" in md_path.read_text(encoding="utf8")

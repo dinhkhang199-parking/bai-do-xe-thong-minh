@@ -1,4 +1,4 @@
-# ITS Parking — đồ án phần mềm quản lý xe vào/ra
+# Bãi đỗ xe thông minh — đồ án phần mềm quản lý xe vào/ra
 
 SPA HTML/CSS/JavaScript + FastAPI + SQLite, nhận dạng biển số có người đối chiếu, quản lý vé, biểu phí, thanh toán và audit. Phạm vi học thuật đã chốt: **phần cứng mô phỏng**. Model vision/detector là thành phần tích hợp có sẵn, không nhận là mô hình tự huấn luyện.
 
@@ -56,6 +56,29 @@ Vision chọn bằng `ITS_OPENAI_VISION_MODEL`, `ITS_OPENAI_BASE_URL`, `ITS_OPEN
 Ảnh JPG/PNG/WEBP tối đa 10 MB, validate nội dung và giới hạn pixel. Token quét gắn ảnh/người dùng. Nhiều biển, bất đồng engine, kết quả không đủ chắc chắn cần người kiểm tra; không đổi B/8 hoặc O/0 khi đối chiếu định danh.
 
 ## Kiểm thử và báo cáo
+
+Kiểm tra code trước khi chạy regression (các công cụ này chỉ dùng lúc phát triển):
+
+```powershell
+.venv\Scripts\python.exe -m pip install -r requirements_dev.txt
+npm ci --ignore-scripts --no-audit --no-fund
+.venv\Scripts\python.exe -m ruff check .
+.venv\Scripts\python.exe -m ruff format --check .
+npm run lint
+npm run format:check
+```
+
+Ruff kiểm tra Python đang dùng trong `api`, `backend`, `integrations`, `scripts`,
+`tests`; ESLint kiểm tra JavaScript và Prettier thống nhất JS/CSS/HTML. Thư viện
+vendor, model người khác cung cấp và bản lưu lịch sử không thuộc phạm vi format.
+Các script CLI được phép chuẩn bị đường dẫn/môi trường trước import ứng dụng
+(`E402`); code còn lại vẫn kiểm tra thứ tự import. Các comment `global`/`exported`
+ghi rõ hàm dùng chung giữa những script được nạp trong `index.html`.
+
+Để tự format: `.venv\Scripts\python.exe -m ruff format .` và `npm run format`.
+Đọc lại diff trước khi dùng `ruff check --fix`; không tự bỏ kiểm tra có tác dụng
+phụ, chẳng hạn truy cập `URL.port` để xác thực cổng. CI chạy từng kiểm tra thành
+bước riêng để một bước sau thành công không che mất lỗi ở bước trước.
 
 ```powershell
 .venv\Scripts\python.exe scripts/isolated_checks.py --coverage --output-dir work/submission-checks

@@ -1,0 +1,16 @@
+{
+  "name": "its-parking-quality",
+  "private": true,
+  "description": "Development checks for the existing static frontend; no build step required.",
+  "scripts": {
+    "lint": "eslint frontend/web tests/*.cjs",
+    "format:check": "prettier --check \"frontend/web/*.{js,css,html}\" \"tests/*.cjs\"",
+    "format": "prettier --write \"frontend/web/*.{js,css,html}\" \"tests/*.cjs\""
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10"
+  }
+}

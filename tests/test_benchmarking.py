@@ -3,9 +3,24 @@ from backend.benchmarking import compute_benchmark_metrics
 
 def test_compute_benchmark_metrics_scores_accuracy_and_latency():
     rows = [
-        {"expected_plate": "66-B1 123.45", "predicted_plate": "66-B1 123.45", "latency_ms": 40, "confidence": 0.9},
-        {"expected_plate": "66-B1 123.45", "predicted_plate": "66B112345", "latency_ms": 60, "confidence": 0.8},
-        {"expected_plate": "59-C2 999.99", "predicted_plate": "", "latency_ms": 100, "confidence": 0.1},
+        {
+            "expected_plate": "66-B1 123.45",
+            "predicted_plate": "66-B1 123.45",
+            "latency_ms": 40,
+            "confidence": 0.9,
+        },
+        {
+            "expected_plate": "66-B1 123.45",
+            "predicted_plate": "66B112345",
+            "latency_ms": 60,
+            "confidence": 0.8,
+        },
+        {
+            "expected_plate": "59-C2 999.99",
+            "predicted_plate": "",
+            "latency_ms": 100,
+            "confidence": 0.1,
+        },
     ]
 
     metrics = compute_benchmark_metrics(rows)

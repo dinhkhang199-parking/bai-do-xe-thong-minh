@@ -11,6 +11,7 @@ def test_production_readiness_demo_mode_has_no_failures():
 
 def test_production_readiness_flags_short_jwt_secret(monkeypatch):
     from backend import production_readiness
+
     monkeypatch.setattr(production_readiness, "API_JWT_SECRET", "short-secret")
     findings = check_production_readiness(demo_ok=False)
     jwt = next(f for f in findings if f.name == "jwt_secret")
@@ -19,6 +20,7 @@ def test_production_readiness_flags_short_jwt_secret(monkeypatch):
 
 def test_production_readiness_accepts_strong_jwt_secret(monkeypatch):
     from backend import production_readiness
+
     monkeypatch.setattr(production_readiness, "API_JWT_SECRET", "x" * 40)
     findings = check_production_readiness(demo_ok=False)
     jwt = next(f for f in findings if f.name == "jwt_secret")

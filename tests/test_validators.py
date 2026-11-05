@@ -1,6 +1,12 @@
 import pytest
 
-from backend.validators import ValidationError, validate_image_extension, validate_plate_text, validate_ticket_id, validate_upload_size
+from backend.validators import (
+    ValidationError,
+    validate_image_extension,
+    validate_plate_text,
+    validate_ticket_id,
+    validate_upload_size,
+)
 
 
 def test_validate_image_extension_accepts_png():

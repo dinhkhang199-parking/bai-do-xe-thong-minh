@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
 import argparse
-from pathlib import Path
+import json
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -41,19 +41,21 @@ def write_reports(metrics, report_dir: Path = REPORT_DIR) -> tuple[Path, Path]:
     return json_path, md_path
 
 
-def display(value, spec='.2f'):
-    return 'not measured' if value is None else format(value, spec)
+def display(value, spec=".2f"):
+    return "not measured" if value is None else format(value, spec)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Summarize recorded OCR predictions; never generate predictions from labels.')
-    parser.add_argument('csv', type=Path)
+    parser = argparse.ArgumentParser(
+        description="Summarize recorded OCR predictions; never generate predictions from labels."
+    )
+    parser.add_argument("csv", type=Path)
     args = parser.parse_args()
     csv_path = args.csv
     try:
         metrics = run_static_benchmark(csv_path)
     except (OSError, ValueError) as exc:
-        print(f'Benchmark not measured: {exc}')
+        print(f"Benchmark not measured: {exc}")
         return 2
     json_path, md_path = write_reports(metrics)
     print("OCR/CV benchmark")

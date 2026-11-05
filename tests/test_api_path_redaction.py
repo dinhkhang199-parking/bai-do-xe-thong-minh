@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 import api.main as api_main
 
-
 pytestmark = pytest.mark.api
 
 
@@ -19,12 +18,14 @@ def client(monkeypatch):
 def readiness_payload():
     return {
         "checks": [{"name": "external_models", "status": "pass"}],
-        "models": [{
-            "name": "dummy.pt",
-            "path": "C:/dummy/models/dummy.pt",
-            "size_mb": 1.0,
-            "metadata": {"cache_path": "C:/dummy/cache", "kind": "fixture"},
-        }],
+        "models": [
+            {
+                "name": "dummy.pt",
+                "path": "C:/dummy/models/dummy.pt",
+                "size_mb": 1.0,
+                "metadata": {"cache_path": "C:/dummy/cache", "kind": "fixture"},
+            }
+        ],
         "diagnostics": {
             "path": "C:/dummy",
             "items": [{"image_path": "C:/dummy/image.jpg", "status": "ok"}, "public"],
@@ -37,11 +38,13 @@ def readiness_payload():
 def public_readiness_payload():
     return {
         "checks": [{"name": "external_models", "status": "pass"}],
-        "models": [{
-            "name": "dummy.pt",
-            "size_mb": 1.0,
-            "metadata": {"kind": "fixture"},
-        }],
+        "models": [
+            {
+                "name": "dummy.pt",
+                "size_mb": 1.0,
+                "metadata": {"kind": "fixture"},
+            }
+        ],
         "diagnostics": {"items": [{"status": "ok"}, "public"], "path_count": 2},
         "summary": {"pass": 1, "warn": 0, "fail": 0, "info": 0},
     }

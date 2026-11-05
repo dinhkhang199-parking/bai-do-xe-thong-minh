@@ -24,6 +24,18 @@ jobs:
         run: python -m pip install --require-hashes -r requirements/windows-py314.lock.txt
       - name: Check dependency consistency
         run: python -m pip check
+      - name: Install Python quality tools
+        run: python -m pip install -r requirements_dev.txt
+      - name: Install frontend quality tools
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Python lint
+        run: python -m ruff check .
+      - name: Python formatting
+        run: python -m ruff format --check .
+      - name: Frontend lint
+        run: npm run lint
+      - name: Frontend formatting
+        run: npm run format:check
       - name: Regression and branch coverage
         run: python scripts/isolated_checks.py --coverage --output-dir work/ci-results
       - name: Fresh-process offline demo acceptance

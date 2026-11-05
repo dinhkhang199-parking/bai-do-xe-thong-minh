@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.benchmark
-
-
 from scripts import benchmark_common
+
+pytestmark = pytest.mark.benchmark
 
 
 def test_evaluate_image_uses_process_plate_image(monkeypatch, tmp_path):

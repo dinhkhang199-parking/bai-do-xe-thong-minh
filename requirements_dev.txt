@@ -1,0 +1,2 @@
+# Code quality tools only; runtime/test dependencies keep their existing locks.
+ruff==0.14.10

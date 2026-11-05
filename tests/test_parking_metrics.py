@@ -4,12 +4,38 @@ from backend.parking_metrics import build_parking_kpis, classify_operational_hea
 
 
 def test_build_parking_kpis_counts_business_states():
-    df = pd.DataFrame([
-        {"status": "IN_PARKING", "match_result": "PENDING", "entry_ocr_confidence": 0.9, "entry_manual_override": 0, "exit_manual_override": 0},
-        {"status": "COMPLETED", "match_result": "MATCH", "entry_ocr_confidence": 0.8, "entry_manual_override": 1, "exit_manual_override": 0},
-        {"status": "NEEDS_REVIEW", "match_result": "MISMATCH", "entry_ocr_confidence": 0.4, "entry_manual_override": 0, "exit_manual_override": 1},
-        {"status": "CANCELLED", "match_result": "PENDING", "entry_ocr_confidence": None, "entry_manual_override": 0, "exit_manual_override": 0},
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                "status": "IN_PARKING",
+                "match_result": "PENDING",
+                "entry_ocr_confidence": 0.9,
+                "entry_manual_override": 0,
+                "exit_manual_override": 0,
+            },
+            {
+                "status": "COMPLETED",
+                "match_result": "MATCH",
+                "entry_ocr_confidence": 0.8,
+                "entry_manual_override": 1,
+                "exit_manual_override": 0,
+            },
+            {
+                "status": "NEEDS_REVIEW",
+                "match_result": "MISMATCH",
+                "entry_ocr_confidence": 0.4,
+                "entry_manual_override": 0,
+                "exit_manual_override": 1,
+            },
+            {
+                "status": "CANCELLED",
+                "match_result": "PENDING",
+                "entry_ocr_confidence": None,
+                "entry_manual_override": 0,
+                "exit_manual_override": 0,
+            },
+        ]
+    )
 
     kpis = build_parking_kpis(df)
 
@@ -26,6 +52,8 @@ def test_build_parking_kpis_counts_business_states():
 
 
 def test_classify_operational_health_flags_review_queue():
-    kpis = build_parking_kpis(pd.DataFrame([{"status": "NEEDS_REVIEW", "match_result": "MISMATCH"}]))
+    kpis = build_parking_kpis(
+        pd.DataFrame([{"status": "NEEDS_REVIEW", "match_result": "MISMATCH"}])
+    )
 
     assert classify_operational_health(kpis) == ("ATTENTION_REQUIRED", "warning")

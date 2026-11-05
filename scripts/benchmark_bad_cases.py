@@ -1,9 +1,17 @@
 import csv
 
-from scripts.benchmark_common import DATASET_CSV, ROOT, evaluate_image, iter_dataset_rows, normalize, resolve_benchmark_uploads_dir
+from scripts.benchmark_common import (
+    DATASET_CSV,
+    ROOT,
+    evaluate_image,
+    iter_dataset_rows,
+    normalize,
+    resolve_benchmark_uploads_dir,
+)
 
 OUT_CSV = ROOT / "data" / "benchmark" / "results" / "benchmark_badcase_results.csv"
 UPLOADS_DIR = resolve_benchmark_uploads_dir()
+
 
 def main():
     rows = []
@@ -23,7 +31,9 @@ def main():
                 "expected_plate": expected_plate,
                 "predicted_plate": predicted_plate,
                 "is_usable": ocr.get("is_usable", False),
-                "exact_match": normalize(predicted_plate) == normalize(expected_plate) if expected_plate else False,
+                "exact_match": normalize(predicted_plate) == normalize(expected_plate)
+                if expected_plate
+                else False,
                 "confidence": ocr.get("confidence", 0.0),
                 "variant": ocr.get("variant", "baseline"),
                 "quality_note": ocr.get("quality_note", ""),
@@ -31,7 +41,19 @@ def main():
         )
 
     with OUT_CSV.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "expected_plate", "predicted_plate", "is_usable", "exact_match", "confidence", "variant", "quality_note"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "file",
+                "expected_plate",
+                "predicted_plate",
+                "is_usable",
+                "exact_match",
+                "confidence",
+                "variant",
+                "quality_note",
+            ],
+        )
         writer.writeheader()
         writer.writerows(rows)
 

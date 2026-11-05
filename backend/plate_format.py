@@ -1,6 +1,5 @@
 import re
 
-
 LETTER_TO_DIGIT = {
     "O": "0",
     "Q": "0",
@@ -95,8 +94,8 @@ def _extract_top_bottom_candidates(raw: str):
                 top_candidate = candidate
                 break
     if top_candidate and not bottom_candidate:
-        remain_raw = compact_raw[len(top_candidate):]
-        remain_digits = compact_digits[len(top_candidate):]
+        remain_raw = compact_raw[len(top_candidate) :]
+        remain_digits = compact_digits[len(top_candidate) :]
         if re.fullmatch(r"\d{4,5}", remain_raw):
             bottom_candidate = remain_raw
         elif re.fullmatch(r"\d{4,5}", remain_digits):
@@ -110,7 +109,11 @@ def classify_plate_type(text: str) -> str:
         return "unknown"
     normalized = normalize_plate_text(raw)
     compact_raw = normalize_generic_plate_text(raw)
-    raw_lines = [re.sub(r"[^A-Z0-9.-]", "", part.upper()) for part in re.split(r"[\r\n]+", raw) if part.strip()]
+    raw_lines = [
+        re.sub(r"[^A-Z0-9.-]", "", part.upper())
+        for part in re.split(r"[\r\n]+", raw)
+        if part.strip()
+    ]
     is_multiline = len(raw_lines) >= 2
     has_separators = bool(re.search(r"[\s.-]", raw))
 
@@ -129,14 +132,18 @@ def classify_plate_type(text: str) -> str:
     if top_candidate and re.fullmatch(r"\d{4}", bottom_candidate or ""):
         if re.fullmatch(r"\d{2}[A-Z]\d", top_candidate):
             return "vn_bike_4_two_line" if is_multiline else "vn_bike_4"
-        if re.fullmatch(r"\d{2}[A-Z]{2}", top_candidate) or re.fullmatch(r"\d{2}[A-Z]{2}\d", top_candidate):
+        if re.fullmatch(r"\d{2}[A-Z]{2}", top_candidate) or re.fullmatch(
+            r"\d{2}[A-Z]{2}\d", top_candidate
+        ):
             return "vn_car_4_two_line" if is_multiline else "vn_car_4"
         return "vn_legacy_4"
 
     if top_candidate and re.fullmatch(r"\d{5}", bottom_candidate or ""):
         if re.fullmatch(r"\d{2}[A-Z]\d", top_candidate):
             return "vn_bike_5_two_line" if is_multiline else "vn_bike_5"
-        if re.fullmatch(r"\d{2}[A-Z]{2}", top_candidate) or re.fullmatch(r"\d{2}[A-Z]{2}\d", top_candidate):
+        if re.fullmatch(r"\d{2}[A-Z]{2}", top_candidate) or re.fullmatch(
+            r"\d{2}[A-Z]{2}\d", top_candidate
+        ):
             return "vn_car_5_two_line" if is_multiline else "vn_car_5"
         return "vn_modern_5"
 
@@ -154,7 +161,11 @@ def format_plate_by_type(text: str, plate_type: str | None = None) -> str:
     if not raw:
         return ""
     kind = plate_type or classify_plate_type(raw)
-    raw_lines = [re.sub(r"[^A-Z0-9.-]", "", part.upper()) for part in re.split(r"[\r\n]+", raw) if part.strip()]
+    raw_lines = [
+        re.sub(r"[^A-Z0-9.-]", "", part.upper())
+        for part in re.split(r"[\r\n]+", raw)
+        if part.strip()
+    ]
     if kind.startswith("vn_"):
         if len(raw_lines) >= 2:
             top_line = normalize_vn_top(raw_lines[0].replace("-", ""))
@@ -196,8 +207,12 @@ def format_confirmed_plate(text: str, vehicle_type: str = "unknown") -> str:
         if not match:
             return ""
         province, series, digits = match.groups()
-        if len(digits) == 6 or (len(digits) == 5 and len(series) == 1
-                and vehicle_type != "car" and not re.search(r"\d{3}\.\d{2}$", raw)):
+        if len(digits) == 6 or (
+            len(digits) == 5
+            and len(series) == 1
+            and vehicle_type != "car"
+            and not re.search(r"\d{3}\.\d{2}$", raw)
+        ):
             series, digits = series + digits[0], digits[1:]
     bottom = digits if len(digits) == 4 else f"{digits[:3]}.{digits[3:]}"
     formatted = f"{province}-{series} {bottom}"
@@ -247,12 +262,19 @@ def candidate_bottoms(bottom_text: str):
 
 def looks_like_vn_top(text: str):
     s = normalize_vn_top(text)
-    return bool(re.fullmatch(r"\d{2}[A-Z]", s) or re.fullmatch(r"\d{2}[A-Z]{2}", s) or re.fullmatch(r"\d{2}[A-Z]\d", s) or re.fullmatch(r"\d{2}[A-Z]{2}\d", s))
+    return bool(
+        re.fullmatch(r"\d{2}[A-Z]", s)
+        or re.fullmatch(r"\d{2}[A-Z]{2}", s)
+        or re.fullmatch(r"\d{2}[A-Z]\d", s)
+        or re.fullmatch(r"\d{2}[A-Z]{2}\d", s)
+    )
 
 
 def looks_like_vn_bottom(text: str):
     s = normalize_plate_text(text)
-    return bool(re.fullmatch(r"\d{4}", s) or re.fullmatch(r"\d{5}", s) or re.fullmatch(r"\d{3}\d{2}", s))
+    return bool(
+        re.fullmatch(r"\d{4}", s) or re.fullmatch(r"\d{5}", s) or re.fullmatch(r"\d{3}\d{2}", s)
+    )
 
 
 def is_top_only_plate(text: str):

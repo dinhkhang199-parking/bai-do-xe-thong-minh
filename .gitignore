@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+.ruff_cache/
+node_modules/
 *.tmp
 
 # Local environment/runtime

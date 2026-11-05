@@ -26,9 +26,13 @@ def build_daily_report(df: pd.DataFrame) -> list[dict]:
             row["exits"] = int(group["exit_time"].notna().sum())
         if "match_result" in logs.columns:
             row["mismatches"] = int((group["match_result"] == "MISMATCH").sum())
-        manual_cols = [col for col in ("entry_manual_override", "exit_manual_override") if col in logs.columns]
+        manual_cols = [
+            col for col in ("entry_manual_override", "exit_manual_override") if col in logs.columns
+        ]
         if manual_cols:
-            row["manual_overrides"] = int((group[manual_cols].fillna(0).astype(int).sum(axis=1) > 0).sum())
+            row["manual_overrides"] = int(
+                (group[manual_cols].fillna(0).astype(int).sum(axis=1) > 0).sum()
+            )
         if "review_required" in logs.columns:
             row["reviews"] = int((group["review_required"].fillna(0).astype(int) > 0).sum())
         rows.append(row)
@@ -49,8 +53,12 @@ def write_report_csv(rows: list[dict], output_path: Path) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate a daily operational report from parking logs.")
-    parser.add_argument("--out", help="Output CSV path (default: reports/daily-report-<timestamp>.csv)")
+    parser = argparse.ArgumentParser(
+        description="Generate a daily operational report from parking logs."
+    )
+    parser.add_argument(
+        "--out", help="Output CSV path (default: reports/daily-report-<timestamp>.csv)"
+    )
     args = parser.parse_args()
 
     rows = build_daily_report(fetch_logs())
@@ -58,7 +66,11 @@ def main() -> int:
         print("No parking logs to report.")
         return 0
 
-    output = Path(args.out) if args.out else (REPORT_DIR / f"daily-report-{datetime.now().strftime('%Y%m%d')}.csv")
+    output = (
+        Path(args.out)
+        if args.out
+        else (REPORT_DIR / f"daily-report-{datetime.now().strftime('%Y%m%d')}.csv")
+    )
     write_report_csv(rows, output)
     print(f"Report written to {output} ({len(rows)} day(s))")
     return 0

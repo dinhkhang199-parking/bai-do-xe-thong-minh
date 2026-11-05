@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.ocr
-
-
 from backend import alpr_service
+
+pytestmark = pytest.mark.ocr
 
 
 class LegacyStylePaddle:

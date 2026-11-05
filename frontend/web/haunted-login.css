@@ -22,10 +22,18 @@
   --haunt-focus: #ffd493;
   --haunt-art: url('/static/assets/haunted-login-v1.png');
 }
-.haunted-shell { display: contents; }
-.haunt-symbols { position: absolute; pointer-events: none; }
-.haunt-art, .haunt-frame-decor { display: none; }
-:root[data-theme="light"] #login-view.journey-ready {
+.haunted-shell {
+  display: contents;
+}
+.haunt-symbols {
+  position: absolute;
+  pointer-events: none;
+}
+.haunt-art,
+.haunt-frame-decor {
+  display: none;
+}
+:root[data-theme='light'] #login-view.journey-ready {
   display: grid;
   grid-template-columns: minmax(0, 1060px);
   grid-template-rows: auto;
@@ -37,28 +45,49 @@
   color-scheme: dark;
   --ui-focus: var(--haunt-focus);
 }
-:root[data-theme="light"] #login-view::before {
+:root[data-theme='light'] #login-view::before {
   content: '';
-  position: absolute; inset: 0; z-index: -1;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--haunt-art) center 75% / cover;
-  opacity: .2;
+  opacity: 0.2;
 }
-:root[data-theme="light"] #login-view .login-scene {
+:root[data-theme='light'] #login-view .login-scene {
   background: var(--haunt-panel);
 }
-:root[data-theme="light"] #login-view .login-scene::after {
+:root[data-theme='light'] #login-view .login-scene::after {
   background: radial-gradient(ellipse at 15% 60%, var(--haunt-mist), transparent 65%);
-  opacity: .1;
+  opacity: 0.1;
 }
-:root[data-theme="light"] #login-view :is(.login-diorama,.car-scene,.pumpkin-corner,.login-vista,.login-moon,.pixel-sun,.pixel-cloud,.snowfield) { display: none !important; }
-:root[data-theme="light"] #login-view :is(#scene-toggle,#journey-next) { display: none !important; }
-:root[data-theme="light"] #login-view .login-motion-toggle { top: 28px; }
-:root[data-theme="light"] #login-view .haunted-shell {
+:root[data-theme='light']
+  #login-view
+  :is(
+    .login-diorama,
+    .car-scene,
+    .pumpkin-corner,
+    .login-vista,
+    .login-moon,
+    .pixel-sun,
+    .pixel-cloud,
+    .snowfield
+  ) {
+  display: none !important;
+}
+:root[data-theme='light'] #login-view :is(#scene-toggle, #journey-next) {
+  display: none !important;
+}
+:root[data-theme='light'] #login-view .login-motion-toggle {
+  top: 28px;
+}
+:root[data-theme='light'] #login-view .haunted-shell {
   display: grid;
-  grid-column: 1; grid-row: 1;
+  grid-column: 1;
+  grid-row: 1;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   position: relative;
-  width: 100%; min-height: 520px;
+  width: 100%;
+  min-height: 520px;
   border: 1px solid var(--haunt-brass);
   border-radius: 16px;
   background: var(--haunt-panel);
@@ -67,108 +96,488 @@
   --text: var(--haunt-ink);
   --ui-focus: var(--haunt-focus);
 }
-:root[data-theme="light"] #login-view .haunt-art {
-  display: block; position: relative;
-  grid-column: 1; grid-row: 1;
-  min-width: 0; overflow: hidden;
+:root[data-theme='light'] #login-view .haunt-art {
+  display: block;
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
   border-radius: 15px 0 0 15px;
 }
 .haunt-art-image {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   background: var(--haunt-art) center 42% / cover;
   mask-image: linear-gradient(90deg, #000 65%, transparent);
   -webkit-mask-image: linear-gradient(90deg, #000 65%, transparent);
 }
-:root[data-theme="light"] #login-view .login-card {
-  grid-column: 2; grid-row: 1;
-  align-self: center; z-index: 3;
-  width: 100%; margin: 0;
+:root[data-theme='light'] #login-view .login-card {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  z-index: 3;
+  width: 100%;
+  margin: 0;
   padding: 44px 48px 44px 24px;
-  border: 0; border-radius: 0;
+  border: 0;
+  border-radius: 0;
   background: transparent;
-  box-shadow: none; backdrop-filter: none;
+  box-shadow: none;
+  backdrop-filter: none;
   color: var(--haunt-ink);
 }
-:root[data-theme="light"] #login-view .login-brand { gap: 12px; margin-bottom: 32px; }
-:root[data-theme="light"] #login-view .login-brand h1 { color: var(--haunt-ink); font-size: 27px; }
-:root[data-theme="light"] #login-view .login-logo { color: var(--haunt-cta-ink); background: var(--haunt-cta); box-shadow: none; }
-:root[data-theme="light"] #login-view .login-form { gap: 22px; }
-:root[data-theme="light"] #login-view .login-field-group > label { color: var(--haunt-ink); font-size: 14px; }
-:root[data-theme="light"] #login-view .field input {
+:root[data-theme='light'] #login-view .login-brand {
+  gap: 12px;
+  margin-bottom: 32px;
+}
+:root[data-theme='light'] #login-view .login-brand h1 {
+  color: var(--haunt-ink);
+  font-size: 27px;
+}
+:root[data-theme='light'] #login-view .login-logo {
+  color: var(--haunt-cta-ink);
+  background: var(--haunt-cta);
+  box-shadow: none;
+}
+:root[data-theme='light'] #login-view .login-form {
+  gap: 22px;
+}
+:root[data-theme='light'] #login-view .login-field-group > label {
+  color: var(--haunt-ink);
+  font-size: 14px;
+}
+:root[data-theme='light'] #login-view .field input {
   color: var(--haunt-ink);
   background: var(--haunt-input);
   border-color: var(--haunt-border);
   border-radius: 10px;
   height: 54px;
 }
-:root[data-theme="light"] #login-view .field input::placeholder { color: var(--haunt-muted); }
-:root[data-theme="light"] #login-view .field-icon { color: var(--haunt-muted); }
-:root[data-theme="light"] #login-view .field input:focus { border-color: var(--haunt-focus); box-shadow: none; }
-:root[data-theme="light"] #login-view .login-form .btn {
+:root[data-theme='light'] #login-view .field input::placeholder {
+  color: var(--haunt-muted);
+}
+:root[data-theme='light'] #login-view .field-icon {
+  color: var(--haunt-muted);
+}
+:root[data-theme='light'] #login-view .field input:focus {
+  border-color: var(--haunt-focus);
+  box-shadow: none;
+}
+:root[data-theme='light'] #login-view .login-form .btn {
   color: var(--haunt-cta-ink);
   background: var(--haunt-cta);
-  min-height: 52px; margin-top: 6px;
+  min-height: 52px;
+  margin-top: 6px;
   box-shadow: none;
-  font-size: 14px; font-weight: 700;
+  font-size: 14px;
+  font-weight: 700;
 }
-:root[data-theme="light"] #login-view .login-form .btn:hover { background: var(--haunt-cta-hover); }
-:root[data-theme="light"] #login-view .password-field { --lamp-off: var(--haunt-muted); --lamp-on: var(--haunt-light); }
-:root[data-theme="light"] #login-view .password-field.lamp-on input { color: var(--haunt-light); border-color: var(--haunt-cta); }
-:root[data-theme="light"] #login-view .login-error { color: var(--haunt-light); background: var(--haunt-orange-shade); border-color: var(--haunt-brass); }
-:root[data-theme="light"] #login-view .haunt-frame-decor { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-.haunt-inner-line { position: absolute; inset: 10px; border: 1px solid var(--haunt-brass); opacity: .35; border-radius: 10px; }
-.haunt-corner { position: absolute; width: 70px; height: 70px; overflow: visible; }
-.corner-tl { left: -30px; top: -36px; transform: rotate(-12deg); }
-.corner-tr { right: -30px; top: -36px; transform: rotate(12deg); }
-.corner-bl { left: -30px; bottom: -30px; transform: rotate(8deg); }
-.corner-br { right: -30px; bottom: -30px; transform: rotate(-8deg); }
-.haunt-carving { fill: var(--haunt-light); filter: drop-shadow(0 0 4px var(--haunt-flame)); }
-.haunt-lantern { position: absolute; width: 46px; height: 90px; overflow: visible; transform-origin: 50% 0; animation: hauntLantern 6s ease-in-out infinite; }
-.lantern-left { top: 105px; left: -24px; }
-.lantern-right { top: 200px; right: -24px; animation-delay: -3s; }
-@keyframes hauntLantern { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
-.haunt-fog { position: absolute; z-index: -1; pointer-events: none; width: 85%; height: 34%; bottom: 4%; left: 0; opacity: .2; background: radial-gradient(ellipse, var(--haunt-mist), transparent 68%); filter: blur(16px); animation: hauntMist 21s ease-in-out infinite alternate; }
-.fog-two { left: 20%; bottom: 13%; opacity: .12; animation-delay: -12s; animation-duration: 28s; }
-@keyframes hauntMist { from { transform: translateX(-12%) scaleX(.85); } to { transform: translateX(12%) scaleX(1.15); } }
-.haunt-ghost { position: absolute; width: 58px; height: 58px; right: 18%; top: 42%; image-rendering: pixelated; opacity: .75; animation: hauntGhost 7s ease-in-out infinite; }
-@keyframes hauntGhost { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
-.haunt-bat { position: absolute; width: 48px; height: 22px; color: var(--haunt-bg); animation: hauntBat 9s ease-in-out infinite alternate; }
-.bat-one { left: 20%; top: 20%; }.bat-two { left: 52%; top: 14%; width: 30px; animation-delay: -5s; }
-@keyframes hauntBat { from { transform: translate(0,0) rotate(-8deg); } to { transform: translate(24px,-8px) rotate(8deg); } }
-.haunt-fireflies i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--haunt-flame); animation: hauntFirefly 5s ease-in-out infinite alternate; }
-.haunt-fireflies i:nth-child(1) { left: 22%; top: 63%; }.haunt-fireflies i:nth-child(2) { left: 70%; top: 70%; animation-delay: -2s; }.haunt-fireflies i:nth-child(3) { left: 48%; top: 85%; animation-delay: -4s; }.haunt-fireflies i:nth-child(4) { left: 12%; top: 32%; animation-delay: -1s; }.haunt-fireflies i:nth-child(5) { left: 66%; top: 46%; animation-delay: -3s; }.haunt-fireflies i:nth-child(6) { left: 36%; top: 52%; animation-delay: -4.5s; }
-@keyframes hauntFirefly { from { opacity: .15; transform: translateY(0); } to { opacity: .9; transform: translateY(-12px); } }
-.haunt-leaves i { position: absolute; width: 15px; height: 17px; background: var(--haunt-orange-shade); clip-path: polygon(50% 0,65% 30%,100% 20%,80% 55%,100% 70%,58% 78%,50% 100%,42% 78%,0 70%,20% 55%,0 20%,35% 30%); animation: hauntLeaf 8s ease-in-out infinite alternate; }
-.haunt-leaves i:nth-child(1) { left: 18%; top: -6px; }.haunt-leaves i:nth-child(2) { left: 37%; top: -8px; animation-delay: -3s; }.haunt-leaves i:nth-child(3) { left: 61%; top: -7px; animation-delay: -5s; }.haunt-leaves i:nth-child(4) { left: 82%; top: -7px; animation-delay: -1s; }.haunt-leaves i:nth-child(5) { left: 18%; bottom: -7px; animation-delay: -4s; }.haunt-leaves i:nth-child(6) { left: 44%; bottom: -8px; animation-delay: -6s; }.haunt-leaves i:nth-child(7) { left: 67%; bottom: -6px; animation-delay: -2s; }.haunt-leaves i:nth-child(8) { right: -7px; top: 31%; animation-delay: -7s; }
-@keyframes hauntLeaf { from { transform: rotate(-15deg); } to { transform: rotate(20deg); } }
-:root[data-theme="light"] #login-view .login-theme-control { color-scheme: dark; background: var(--haunt-panel); border-color: var(--haunt-border); box-shadow: none; }
-:root[data-theme="light"] #login-view .login-theme-control button { color: var(--haunt-muted); }
-:root[data-theme="light"] #login-view .login-theme-control button[aria-pressed="true"] { color: var(--haunt-cta-ink); background: var(--haunt-cta); border-color: var(--haunt-brass); }
-:root[data-theme="light"] #login-view .login-motion-toggle { color: var(--haunt-ink); background: var(--haunt-panel); border-color: var(--haunt-border); }
+:root[data-theme='light'] #login-view .login-form .btn:hover {
+  background: var(--haunt-cta-hover);
+}
+:root[data-theme='light'] #login-view .password-field {
+  --lamp-off: var(--haunt-muted);
+  --lamp-on: var(--haunt-light);
+}
+:root[data-theme='light'] #login-view .password-field.lamp-on input {
+  color: var(--haunt-light);
+  border-color: var(--haunt-cta);
+}
+:root[data-theme='light'] #login-view .login-error {
+  color: var(--haunt-light);
+  background: var(--haunt-orange-shade);
+  border-color: var(--haunt-brass);
+}
+:root[data-theme='light'] #login-view .haunt-frame-decor {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.haunt-inner-line {
+  position: absolute;
+  inset: 10px;
+  border: 1px solid var(--haunt-brass);
+  opacity: 0.35;
+  border-radius: 10px;
+}
+.haunt-corner {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  overflow: visible;
+}
+.corner-tl {
+  left: -30px;
+  top: -36px;
+  transform: rotate(-12deg);
+}
+.corner-tr {
+  right: -30px;
+  top: -36px;
+  transform: rotate(12deg);
+}
+.corner-bl {
+  left: -30px;
+  bottom: -30px;
+  transform: rotate(8deg);
+}
+.corner-br {
+  right: -30px;
+  bottom: -30px;
+  transform: rotate(-8deg);
+}
+.haunt-carving {
+  fill: var(--haunt-light);
+  filter: drop-shadow(0 0 4px var(--haunt-flame));
+}
+.haunt-lantern {
+  position: absolute;
+  width: 46px;
+  height: 90px;
+  overflow: visible;
+  transform-origin: 50% 0;
+  animation: hauntLantern 6s ease-in-out infinite;
+}
+.lantern-left {
+  top: 105px;
+  left: -24px;
+}
+.lantern-right {
+  top: 200px;
+  right: -24px;
+  animation-delay: -3s;
+}
+@keyframes hauntLantern {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+.haunt-fog {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  width: 85%;
+  height: 34%;
+  bottom: 4%;
+  left: 0;
+  opacity: 0.2;
+  background: radial-gradient(ellipse, var(--haunt-mist), transparent 68%);
+  filter: blur(16px);
+  animation: hauntMist 21s ease-in-out infinite alternate;
+}
+.fog-two {
+  left: 20%;
+  bottom: 13%;
+  opacity: 0.12;
+  animation-delay: -12s;
+  animation-duration: 28s;
+}
+@keyframes hauntMist {
+  from {
+    transform: translateX(-12%) scaleX(0.85);
+  }
+  to {
+    transform: translateX(12%) scaleX(1.15);
+  }
+}
+.haunt-ghost {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  right: 18%;
+  top: 42%;
+  image-rendering: pixelated;
+  opacity: 0.75;
+  animation: hauntGhost 7s ease-in-out infinite;
+}
+@keyframes hauntGhost {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(4deg);
+  }
+}
+.haunt-bat {
+  position: absolute;
+  width: 48px;
+  height: 22px;
+  color: var(--haunt-bg);
+  animation: hauntBat 9s ease-in-out infinite alternate;
+}
+.bat-one {
+  left: 20%;
+  top: 20%;
+}
+.bat-two {
+  left: 52%;
+  top: 14%;
+  width: 30px;
+  animation-delay: -5s;
+}
+@keyframes hauntBat {
+  from {
+    transform: translate(0, 0) rotate(-8deg);
+  }
+  to {
+    transform: translate(24px, -8px) rotate(8deg);
+  }
+}
+.haunt-fireflies i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--haunt-flame);
+  animation: hauntFirefly 5s ease-in-out infinite alternate;
+}
+.haunt-fireflies i:nth-child(1) {
+  left: 22%;
+  top: 63%;
+}
+.haunt-fireflies i:nth-child(2) {
+  left: 70%;
+  top: 70%;
+  animation-delay: -2s;
+}
+.haunt-fireflies i:nth-child(3) {
+  left: 48%;
+  top: 85%;
+  animation-delay: -4s;
+}
+.haunt-fireflies i:nth-child(4) {
+  left: 12%;
+  top: 32%;
+  animation-delay: -1s;
+}
+.haunt-fireflies i:nth-child(5) {
+  left: 66%;
+  top: 46%;
+  animation-delay: -3s;
+}
+.haunt-fireflies i:nth-child(6) {
+  left: 36%;
+  top: 52%;
+  animation-delay: -4.5s;
+}
+@keyframes hauntFirefly {
+  from {
+    opacity: 0.15;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.9;
+    transform: translateY(-12px);
+  }
+}
+.haunt-leaves i {
+  position: absolute;
+  width: 15px;
+  height: 17px;
+  background: var(--haunt-orange-shade);
+  clip-path: polygon(
+    50% 0,
+    65% 30%,
+    100% 20%,
+    80% 55%,
+    100% 70%,
+    58% 78%,
+    50% 100%,
+    42% 78%,
+    0 70%,
+    20% 55%,
+    0 20%,
+    35% 30%
+  );
+  animation: hauntLeaf 8s ease-in-out infinite alternate;
+}
+.haunt-leaves i:nth-child(1) {
+  left: 18%;
+  top: -6px;
+}
+.haunt-leaves i:nth-child(2) {
+  left: 37%;
+  top: -8px;
+  animation-delay: -3s;
+}
+.haunt-leaves i:nth-child(3) {
+  left: 61%;
+  top: -7px;
+  animation-delay: -5s;
+}
+.haunt-leaves i:nth-child(4) {
+  left: 82%;
+  top: -7px;
+  animation-delay: -1s;
+}
+.haunt-leaves i:nth-child(5) {
+  left: 18%;
+  bottom: -7px;
+  animation-delay: -4s;
+}
+.haunt-leaves i:nth-child(6) {
+  left: 44%;
+  bottom: -8px;
+  animation-delay: -6s;
+}
+.haunt-leaves i:nth-child(7) {
+  left: 67%;
+  bottom: -6px;
+  animation-delay: -2s;
+}
+.haunt-leaves i:nth-child(8) {
+  right: -7px;
+  top: 31%;
+  animation-delay: -7s;
+}
+@keyframes hauntLeaf {
+  from {
+    transform: rotate(-15deg);
+  }
+  to {
+    transform: rotate(20deg);
+  }
+}
+:root[data-theme='light'] #login-view .login-theme-control {
+  color-scheme: dark;
+  background: var(--haunt-panel);
+  border-color: var(--haunt-border);
+  box-shadow: none;
+}
+:root[data-theme='light'] #login-view .login-theme-control button {
+  color: var(--haunt-muted);
+}
+:root[data-theme='light'] #login-view .login-theme-control button[aria-pressed='true'] {
+  color: var(--haunt-cta-ink);
+  background: var(--haunt-cta);
+  border-color: var(--haunt-brass);
+}
+:root[data-theme='light'] #login-view .login-motion-toggle {
+  color: var(--haunt-ink);
+  background: var(--haunt-panel);
+  border-color: var(--haunt-border);
+}
 @media (max-width: 960px) {
-  :root[data-theme="light"] #login-view.journey-ready { padding: 132px 50px 72px; grid-template-columns: minmax(0, 780px); }
-  :root[data-theme="light"] #login-view .haunted-shell { grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); min-height: 480px; }
-  :root[data-theme="light"] #login-view .login-card { padding: 38px 32px 38px 16px; }
-  :root[data-theme="light"] #login-view .login-brand h1 { font-size: 23px; }
+  :root[data-theme='light'] #login-view.journey-ready {
+    padding: 132px 50px 72px;
+    grid-template-columns: minmax(0, 780px);
+  }
+  :root[data-theme='light'] #login-view .haunted-shell {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    min-height: 480px;
+  }
+  :root[data-theme='light'] #login-view .login-card {
+    padding: 38px 32px 38px 16px;
+  }
+  :root[data-theme='light'] #login-view .login-brand h1 {
+    font-size: 23px;
+  }
 }
 @media (max-width: 620px) {
-  .login-theme-control button > span { display: none; }
-  .login-theme-control button { padding-left: 9px; padding-right: 9px; }
-  :root[data-theme="light"] #login-view.journey-ready { padding: 116px 30px 54px; }
-  :root[data-theme="light"] #login-view .login-motion-toggle { top: 14px; left: 14px; max-width: 132px; padding: 9px; font-size: 12px; }
-  :root[data-theme="light"] #login-view .login-motion-toggle span { max-width: 84px; }
-  :root[data-theme="light"] #login-view .haunted-shell { grid-template-columns: minmax(0,1fr); min-height: 0; }
-  :root[data-theme="light"] #login-view .haunt-art { grid-column: 1; grid-row: 1; height: 165px; border-radius: 15px 15px 0 0; }
-  .haunt-art-image { background-position: center 36%; mask-image: linear-gradient(#000 50%, transparent); -webkit-mask-image: linear-gradient(#000 50%, transparent); }
-  :root[data-theme="light"] #login-view .login-card { grid-column: 1; grid-row: 2; padding: 10px 25px 34px; }
-  :root[data-theme="light"] #login-view .login-brand { margin-bottom: 24px; }
-  :root[data-theme="light"] #login-view .login-logo { width: 40px; height: 40px; }
-  :root[data-theme="light"] #login-view .login-brand h1 { font-size: 22px; }
-  :root[data-theme="light"] #login-view .login-form { gap: 18px; }
-  .haunt-corner { width: 52px; height: 52px; }.corner-tl,.corner-bl { left: -23px; }.corner-tr,.corner-br { right: -23px; }.corner-tl,.corner-tr { top: -27px; }.corner-bl,.corner-br { bottom: -23px; }
-  .haunt-lantern { width: 34px; height: 70px; }.lantern-left { left: -17px; top: 76px; }.lantern-right { right: -17px; top: 235px; }
-  .haunt-ghost { width: 58px; height: 58px; top: 24%; right: 25%; }
+  .login-theme-control button > span {
+    display: none;
+  }
+  .login-theme-control button {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+  :root[data-theme='light'] #login-view.journey-ready {
+    padding: 116px 30px 54px;
+  }
+  :root[data-theme='light'] #login-view .login-motion-toggle {
+    top: 14px;
+    left: 14px;
+    max-width: 132px;
+    padding: 9px;
+    font-size: 12px;
+  }
+  :root[data-theme='light'] #login-view .login-motion-toggle span {
+    max-width: 84px;
+  }
+  :root[data-theme='light'] #login-view .haunted-shell {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  :root[data-theme='light'] #login-view .haunt-art {
+    grid-column: 1;
+    grid-row: 1;
+    height: 165px;
+    border-radius: 15px 15px 0 0;
+  }
+  .haunt-art-image {
+    background-position: center 36%;
+    mask-image: linear-gradient(#000 50%, transparent);
+    -webkit-mask-image: linear-gradient(#000 50%, transparent);
+  }
+  :root[data-theme='light'] #login-view .login-card {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 10px 25px 34px;
+  }
+  :root[data-theme='light'] #login-view .login-brand {
+    margin-bottom: 24px;
+  }
+  :root[data-theme='light'] #login-view .login-logo {
+    width: 40px;
+    height: 40px;
+  }
+  :root[data-theme='light'] #login-view .login-brand h1 {
+    font-size: 22px;
+  }
+  :root[data-theme='light'] #login-view .login-form {
+    gap: 18px;
+  }
+  .haunt-corner {
+    width: 52px;
+    height: 52px;
+  }
+  .corner-tl,
+  .corner-bl {
+    left: -23px;
+  }
+  .corner-tr,
+  .corner-br {
+    right: -23px;
+  }
+  .corner-tl,
+  .corner-tr {
+    top: -27px;
+  }
+  .corner-bl,
+  .corner-br {
+    bottom: -23px;
+  }
+  .haunt-lantern {
+    width: 34px;
+    height: 70px;
+  }
+  .lantern-left {
+    left: -17px;
+    top: 76px;
+  }
+  .lantern-right {
+    right: -17px;
+    top: 235px;
+  }
+  .haunt-ghost {
+    width: 58px;
+    height: 58px;
+    top: 24%;
+    right: 25%;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .haunted-shell *, .haunted-shell *::before, .haunted-shell *::after { animation: none !important; }
+  .haunted-shell *,
+  .haunted-shell *::before,
+  .haunted-shell *::after {
+    animation: none !important;
+  }
 }

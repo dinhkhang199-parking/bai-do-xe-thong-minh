@@ -8,12 +8,16 @@ def test_accuracy_mode_compares_fast_and_paddle(monkeypatch):
     monkeypatch.setattr(alpr_service, "_is_good_enough", lambda payload: True)
     monkeypatch.setattr(alpr_service, "load_fast_alpr", lambda detector_model=None: None)
     monkeypatch.setattr(alpr_service, "_load_runtime_frame", lambda image_path: object())
-    monkeypatch.setattr(alpr_service, "_run_paddle_ocr", lambda image_path, detector_label, annotated_path: {
-        "text": "65-D1 123.45",
-        "confidence": 0.95,
-        "ocr_engine": "paddleocr",
-        "is_usable": True,
-    })
+    monkeypatch.setattr(
+        alpr_service,
+        "_run_paddle_ocr",
+        lambda image_path, detector_label, annotated_path: {
+            "text": "65-D1 123.45",
+            "confidence": 0.95,
+            "ocr_engine": "paddleocr",
+            "is_usable": True,
+        },
+    )
 
     result = alpr_service.run_alpr("sample.jpg")
 
@@ -48,8 +52,12 @@ def test_speed_mode_returns_good_fast_payload_without_paddle(monkeypatch):
 
     called = {"paddle": False}
     monkeypatch.setattr(alpr_service, "load_fast_alpr", lambda detector_model=None: FakeAlpr())
-    monkeypatch.setattr(alpr_service, "save_annotated_image", lambda cv2, image, prefix: "annotated.jpg")
-    monkeypatch.setattr(alpr_service, "_run_paddle_ocr", lambda *args: called.__setitem__("paddle", True))
+    monkeypatch.setattr(
+        alpr_service, "save_annotated_image", lambda cv2, image, prefix: "annotated.jpg"
+    )
+    monkeypatch.setattr(
+        alpr_service, "_run_paddle_ocr", lambda *args: called.__setitem__("paddle", True)
+    )
 
     result = alpr_service.run_alpr("sample.jpg")
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import math
-from pathlib import Path
 import statistics
 import sys
 import time
+from pathlib import Path
 
 import pandas as pd
 
@@ -14,9 +14,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from backend.alpr_service import run_alpr
+from backend.benchmarking import plate_key as normalize_plate_text
 from backend.config import REPORT_DIR
 from backend.ocr_analysis import analyze_ocr_rows
-from backend.benchmarking import plate_key as normalize_plate_text
 from scripts.run_benchmark import display
 
 
@@ -31,10 +31,16 @@ def _resolve_image_path(raw_path: str, csv_path: Path) -> Path:
     return (csv_path.parent / candidate).resolve()
 
 
-def run_inference_benchmark(csv_path: Path | None = None, detector_model: str | None = None, ocr_engine: str = "auto") -> dict:
+def run_inference_benchmark(
+    csv_path: Path | None = None, detector_model: str | None = None, ocr_engine: str = "auto"
+) -> dict:
     csv_path = csv_path or _default_csv()
     if not csv_path.exists():
-        return {"field_images_available": False, "reason": f"CSV not found: {csv_path}", "samples": []}
+        return {
+            "field_images_available": False,
+            "reason": f"CSV not found: {csv_path}",
+            "samples": [],
+        }
     df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
     samples = []
     latencies = []
@@ -42,7 +48,11 @@ def run_inference_benchmark(csv_path: Path | None = None, detector_model: str | 
     for row in df.to_dict(orient="records"):
         image_path = _resolve_image_path(str(row.get("image_path") or ""), csv_path)
         expected = str(row.get("expected_plate") or "").strip()
-        sample = {"image_path": str(image_path), "expected_plate": expected, "exists": image_path.is_file()}
+        sample = {
+            "image_path": str(image_path),
+            "expected_plate": expected,
+            "exists": image_path.is_file(),
+        }
         if image_path.is_file():
             runnable += 1
             start = time.perf_counter()
@@ -50,28 +60,34 @@ def run_inference_benchmark(csv_path: Path | None = None, detector_model: str | 
             elapsed = (time.perf_counter() - start) * 1000
             latencies.append(elapsed)
             predicted = str(result.get("text") or "")
-            sample.update({
-                "predicted_plate": predicted,
-                "confidence": float(result.get("confidence") or 0.0),
-                "latency_ms": elapsed,
-                "ocr_engine": result.get("ocr_engine", "unknown"),
-                "quality_note": result.get("quality_note", ""),
-                "normalized_match": bool(expected and predicted and normalize_plate_text(expected) == normalize_plate_text(predicted)),
-            })
+            sample.update(
+                {
+                    "predicted_plate": predicted,
+                    "confidence": float(result.get("confidence") or 0.0),
+                    "latency_ms": elapsed,
+                    "ocr_engine": result.get("ocr_engine", "unknown"),
+                    "quality_note": result.get("quality_note", ""),
+                    "normalized_match": bool(
+                        expected
+                        and predicted
+                        and normalize_plate_text(expected) == normalize_plate_text(predicted)
+                    ),
+                }
+            )
         samples.append(sample)
     analysis_rows = [sample for sample in samples if sample.get("exists")]
     analysis = analyze_ocr_rows(analysis_rows).as_dict()
     p95 = None
     if latencies:
         ordered = sorted(latencies)
-        p95 = ordered[math.ceil(.95 * len(ordered)) - 1]
+        p95 = ordered[math.ceil(0.95 * len(ordered)) - 1]
     return {
         "csv_path": str(csv_path),
         "field_images_available": runnable > 0,
         "total_rows": len(samples),
         "runnable_images": runnable,
-        "labeled_images": analysis['total'],
-        "accuracy_measured": analysis['total'] > 0,
+        "labeled_images": analysis["total"],
+        "accuracy_measured": analysis["total"] > 0,
         "average_latency_ms": statistics.mean(latencies) if latencies else None,
         "p95_latency_ms": p95,
         "analysis": analysis,

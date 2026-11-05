@@ -8,7 +8,6 @@ import pandas as pd
 
 from backend.config import DB_PATH, SCHEMA_VERSION
 
-
 PARKING_LOGS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS parking_logs (
     ticket_id TEXT PRIMARY KEY,
@@ -182,13 +181,16 @@ def apply_migrations(db_path=DB_PATH):
             _ensure_parking_logs_columns(cursor)
             _ensure_app_user_columns(cursor)
             from backend.billing import init_billing_schema
+
             init_billing_schema(conn)
             cursor.execute(
                 "UPDATE app_users SET auth_version = lower(hex(randomblob(16))) "
                 "WHERE auth_version IS NULL OR auth_version = ''"
             )
             for version in range(1, SCHEMA_VERSION + 1):
-                cursor.execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (version,))
+                cursor.execute(
+                    "INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)", (version,)
+                )
 
             existing_columns = _get_table_columns(cursor, "parking_logs")
             if "ocr_confidence" in existing_columns:
@@ -200,17 +202,35 @@ def apply_migrations(db_path=DB_PATH):
                     cursor.execute(
                         "UPDATE parking_logs SET exit_ocr_confidence = COALESCE(exit_ocr_confidence, ocr_confidence) WHERE status = 'COMPLETED' AND exit_ocr_confidence IS NULL"
                     )
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_logs_ticket_id ON parking_logs(ticket_id)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_logs_plate_entry ON parking_logs(plate_entry)")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_parking_logs_ticket_id ON parking_logs(ticket_id)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_parking_logs_plate_entry ON parking_logs(plate_entry)"
+            )
             if {"status", "entry_time"}.issubset(existing_columns):
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_logs_status_entry_time ON parking_logs(status, entry_time DESC)")
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_parking_logs_status_entry_time ON parking_logs(status, entry_time DESC)"
+                )
             if "entry_time" in existing_columns:
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_logs_entry_time ON parking_logs(entry_time DESC)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_events_ticket_time ON parking_events(ticket_id, created_at DESC)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_username)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parking_events_time ON parking_events(created_at DESC,id DESC)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_completed_payment_order ON parking_logs(coalesce(exit_time,entry_time) DESC,ticket_id DESC) WHERE status='COMPLETED'")
+                cursor.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_parking_logs_entry_time ON parking_logs(entry_time DESC)"
+                )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_parking_events_ticket_time ON parking_events(ticket_id, created_at DESC)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_username)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_parking_events_time ON parking_events(created_at DESC,id DESC)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_completed_payment_order ON parking_logs(coalesce(exit_time,entry_time) DESC,ticket_id DESC) WHERE status='COMPLETED'"
+            )
         conn.commit()
 
 
@@ -234,7 +254,9 @@ def get_active_tickets(db_path=DB_PATH) -> pd.DataFrame:
 def fetch_ticket_detail(ticket_id: str, db_path=DB_PATH) -> dict | None:
     with _connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
-        row = conn.execute("SELECT * FROM parking_logs WHERE ticket_id = ?", ((ticket_id or "").strip(),)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM parking_logs WHERE ticket_id = ?", ((ticket_id or "").strip(),)
+        ).fetchone()
         return dict(row) if row else None
 
 
@@ -248,7 +270,9 @@ def fetch_app_user(username: str, db_path=DB_PATH) -> dict | None:
         return dict(row) if row else None
 
 
-def create_app_user(username: str, password_hash: str, role: str = "viewer", db_path=DB_PATH) -> bool:
+def create_app_user(
+    username: str, password_hash: str, role: str = "viewer", db_path=DB_PATH
+) -> bool:
     clean_username = (username or "").strip()
     with _connect(db_path) as conn:
         cursor = conn.cursor()
@@ -272,8 +296,9 @@ def update_app_user_password_hash(username: str, password_hash: str, db_path=DB_
         return cursor.rowcount > 0
 
 
-def upgrade_legacy_password_hash(username: str, old_hash: str, old_auth_version: str,
-                                 password_hash: str, db_path=DB_PATH) -> str | None:
+def upgrade_legacy_password_hash(
+    username: str, old_hash: str, old_auth_version: str, password_hash: str, db_path=DB_PATH
+) -> str | None:
     version = secrets.token_hex(16)
     with _connect(db_path) as conn:
         cursor = conn.execute(
@@ -325,14 +350,18 @@ class LastAdminError(ValueError):
 
 
 def _protect_last_admin(conn: sqlite3.Connection, username: str):
-    current = conn.execute("SELECT role, is_active FROM app_users WHERE username = ?", (username,)).fetchone()
+    current = conn.execute(
+        "SELECT role, is_active FROM app_users WHERE username = ?", (username,)
+    ).fetchone()
     if current and current[0] == "admin" and current[1]:
         remaining = conn.execute(
             "SELECT count(*) FROM app_users WHERE role = 'admin' AND is_active = 1 AND username != ?",
             (username,),
         ).fetchone()[0]
         if remaining == 0:
-            raise LastAdminError("Cần giữ ít nhất một quản trị viên đang hoạt động. Hãy tạo hoặc kích hoạt quản trị viên khác trước.")
+            raise LastAdminError(
+                "Cần giữ ít nhất một quản trị viên đang hoạt động. Hãy tạo hoặc kích hoạt quản trị viên khác trước."
+            )
 
 
 def update_app_user_role(username: str, role: str, db_path=DB_PATH) -> bool:
@@ -340,7 +369,9 @@ def update_app_user_role(username: str, role: str, db_path=DB_PATH) -> bool:
     with _connect(db_path) as conn:
         # Serialize the check with the write, including concurrent admin changes.
         conn.execute("BEGIN IMMEDIATE")
-        current = conn.execute("SELECT role FROM app_users WHERE username = ?", (clean_username,)).fetchone()
+        current = conn.execute(
+            "SELECT role FROM app_users WHERE username = ?", (clean_username,)
+        ).fetchone()
         if not current:
             return False
         if current[0] == role:
@@ -348,7 +379,10 @@ def update_app_user_role(username: str, role: str, db_path=DB_PATH) -> bool:
         if role != "admin":
             _protect_last_admin(conn, clean_username)
         cursor = conn.cursor()
-        cursor.execute("UPDATE app_users SET role = ?, auth_version = lower(hex(randomblob(16))) WHERE username = ?", (role, clean_username))
+        cursor.execute(
+            "UPDATE app_users SET role = ?, auth_version = lower(hex(randomblob(16))) WHERE username = ?",
+            (role, clean_username),
+        )
         conn.commit()
         return cursor.rowcount > 0
 
@@ -357,7 +391,9 @@ def update_app_user_active(username: str, is_active: bool, db_path=DB_PATH) -> b
     clean_username = (username or "").strip()
     with _connect(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        current = conn.execute("SELECT is_active FROM app_users WHERE username = ?", (clean_username,)).fetchone()
+        current = conn.execute(
+            "SELECT is_active FROM app_users WHERE username = ?", (clean_username,)
+        ).fetchone()
         if not current:
             return False
         if bool(current[0]) == bool(is_active):
@@ -365,7 +401,10 @@ def update_app_user_active(username: str, is_active: bool, db_path=DB_PATH) -> b
         if not is_active:
             _protect_last_admin(conn, clean_username)
         cursor = conn.cursor()
-        cursor.execute("UPDATE app_users SET is_active = ?, auth_version = lower(hex(randomblob(16))) WHERE username = ?", (1 if is_active else 0, clean_username))
+        cursor.execute(
+            "UPDATE app_users SET is_active = ?, auth_version = lower(hex(randomblob(16))) WHERE username = ?",
+            (1 if is_active else 0, clean_username),
+        )
         conn.commit()
         return cursor.rowcount > 0
 
@@ -381,8 +420,18 @@ def delete_app_user(username: str, db_path=DB_PATH) -> bool:
         return cursor.rowcount > 0
 
 
-def append_audit_log(actor_username: str | None, actor_role: str | None, action: str, *, target_type: str | None = None, target_id: str | None = None, details_json: str | None = None, db_path=DB_PATH, connection=None) -> bool:
-    with (nullcontext(connection) if connection is not None else closing(_connect(db_path))) as conn:
+def append_audit_log(
+    actor_username: str | None,
+    actor_role: str | None,
+    action: str,
+    *,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    details_json: str | None = None,
+    db_path=DB_PATH,
+    connection=None,
+) -> bool:
+    with nullcontext(connection) if connection is not None else closing(_connect(db_path)) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO audit_logs(actor_username, actor_role, action, target_type, target_id, details_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -393,7 +442,7 @@ def append_audit_log(actor_username: str | None, actor_role: str | None, action:
                 (target_type or "").strip() or None,
                 (target_id or "").strip() or None,
                 details_json,
-                datetime.now(timezone.utc).isoformat(timespec='seconds'),
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
             ),
         )
         if connection is None:
@@ -406,9 +455,21 @@ def fetch_audit_logs(db_path=DB_PATH) -> pd.DataFrame:
         return pd.read_sql_query("SELECT * FROM audit_logs ORDER BY created_at DESC, id DESC", conn)
 
 
-def append_parking_event(ticket_id: str | None, event_type: str, *, actor_username: str | None = None, actor_role: str | None = None, plate_text: str | None = None, confidence: float | None = None, source: str | None = None, details: dict | None = None, db_path=DB_PATH, connection=None) -> bool:
+def append_parking_event(
+    ticket_id: str | None,
+    event_type: str,
+    *,
+    actor_username: str | None = None,
+    actor_role: str | None = None,
+    plate_text: str | None = None,
+    confidence: float | None = None,
+    source: str | None = None,
+    details: dict | None = None,
+    db_path=DB_PATH,
+    connection=None,
+) -> bool:
     details_json = json.dumps(details or {}, ensure_ascii=False) if details else None
-    with (nullcontext(connection) if connection is not None else closing(_connect(db_path))) as conn:
+    with nullcontext(connection) if connection is not None else closing(_connect(db_path)) as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
@@ -424,7 +485,7 @@ def append_parking_event(ticket_id: str | None, event_type: str, *, actor_userna
                 confidence,
                 source,
                 details_json,
-                datetime.now(timezone.utc).isoformat(timespec='seconds'),
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
             ),
         )
         if connection is None:
@@ -440,4 +501,6 @@ def fetch_parking_events(ticket_id: str | None = None, db_path=DB_PATH) -> pd.Da
                 conn,
                 params=((ticket_id or "").strip(),),
             )
-        return pd.read_sql_query("SELECT * FROM parking_events ORDER BY created_at DESC, id DESC", conn)
+        return pd.read_sql_query(
+            "SELECT * FROM parking_events ORDER BY created_at DESC, id DESC", conn
+        )

@@ -43,5 +43,7 @@ def validate_plate_text(plate_text: str) -> str:
 
     formatted = format_confirmed_plate(clean)
     if not formatted:
-        raise ValidationError("Invalid plate text: Biển số thiếu hoặc sai ký tự; hãy đối chiếu ảnh và nhập đầy đủ.")
+        raise ValidationError(
+            "Invalid plate text: Biển số thiếu hoặc sai ký tự; hãy đối chiếu ảnh và nhập đầy đủ."
+        )
     return formatted

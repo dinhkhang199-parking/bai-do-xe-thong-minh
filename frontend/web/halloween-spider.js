@@ -22,113 +22,220 @@ document.addEventListener('DOMContentLoaded', () => {
   spider.innerHTML = art;
   document.querySelector('#spider-hug-body').innerHTML = art;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let x = 24, y = 110, target = null, frame = null, previous = 0;
-  let hovering = false, keyboardFocus = false, hugging = false, hugWithKeyboard = false, releaseTimer = null, hoverTimer = null;
-  let obstacles = [], nextObstacleCheck = 0;
+  let x = 24,
+    y = 110,
+    target = null,
+    frame = null,
+    previous = 0;
+  let hovering = false,
+    keyboardFocus = false,
+    hugging = false,
+    hugWithKeyboard = false,
+    releaseTimer = null,
+    hoverTimer = null;
+  let obstacles = [],
+    nextObstacleCheck = 0;
   const enabled = () => document.documentElement.dataset.theme === 'light' && !document.hidden;
   const paused = () => reduced.matches || document.body.classList.contains('motion-paused');
-  const bounds = () => ({ x: Math.max(8, innerWidth - spider.offsetWidth - 12), y: Math.max(8, innerHeight - spider.offsetHeight - 12) });
+  const bounds = () => ({
+    x: Math.max(8, innerWidth - spider.offsetWidth - 12),
+    y: Math.max(8, innerHeight - spider.offsetHeight - 12),
+  });
   function refreshObstacles() {
-    obstacles = [...document.querySelectorAll('button:not(#halloween-spider), input, select, textarea, a[href]')]
-      .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+    obstacles = [
+      ...document.querySelectorAll(
+        'button:not(#halloween-spider), input, select, textarea, a[href]',
+      ),
+    ]
+      .map((element) => element.getBoundingClientRect())
+      .filter((rect) => rect.width > 0 && rect.height > 0);
   }
   function blocked(px, py) {
     const size = spider.offsetWidth || 68;
-    return obstacles.some(rect => px < rect.right + 8 && px + size > rect.left - 8 && py < rect.bottom + 8 && py + size > rect.top - 8);
+    return obstacles.some(
+      (rect) =>
+        px < rect.right + 8 &&
+        px + size > rect.left - 8 &&
+        py < rect.bottom + 8 &&
+        py + size > rect.top - 8,
+    );
   }
   function moveClear() {
     if (!blocked(x, y)) return;
-    const limit = bounds(); let best = null, distance = Infinity;
-    for (let cy = 8; cy <= limit.y; cy += 76) for (let cx = 8; cx <= limit.x; cx += 76) {
-      const candidateDistance = (cx - x) ** 2 + (cy - y) ** 2;
-      if (!blocked(cx, cy) && candidateDistance < distance) { best = { x: cx, y: cy }; distance = candidateDistance; }
+    const limit = bounds();
+    let best = null,
+      distance = Infinity;
+    for (let cy = 8; cy <= limit.y; cy += 76)
+      for (let cx = 8; cx <= limit.x; cx += 76) {
+        const candidateDistance = (cx - x) ** 2 + (cy - y) ** 2;
+        if (!blocked(cx, cy) && candidateDistance < distance) {
+          best = { x: cx, y: cy };
+          distance = candidateDistance;
+        }
+      }
+    if (best) {
+      x = best.x;
+      y = best.y;
+      target = null;
     }
-    if (best) { x = best.x; y = best.y; target = null; }
   }
   function destination(limit) {
     for (let attempt = 0; attempt < 32; attempt++) {
-      const candidate = { x: 8 + Math.random() * (limit.x - 8), y: 8 + Math.random() * (limit.y - 8) };
+      const candidate = {
+        x: 8 + Math.random() * (limit.x - 8),
+        y: 8 + Math.random() * (limit.y - 8),
+      };
       if (!blocked(candidate.x, candidate.y)) return candidate;
     }
     return { x, y };
   }
-  function draw() { spider.style.transform = `translate(${x}px,${y}px)`; }
+  function draw() {
+    spider.style.transform = `translate(${x}px,${y}px)`;
+  }
   function stop() {
     if (frame !== null) cancelAnimationFrame(frame);
-    frame = null; previous = 0; spider.classList.remove('is-crawling');
+    frame = null;
+    previous = 0;
+    spider.classList.remove('is-crawling');
   }
   function tick(time) {
     frame = null;
-    if (!enabled() || paused() || hugging || hovering || keyboardFocus) { stop(); return; }
-    const dt = previous ? Math.min((time - previous) / 1000, .04) : 0;
+    if (!enabled() || paused() || hugging || hovering || keyboardFocus) {
+      stop();
+      return;
+    }
+    const dt = previous ? Math.min((time - previous) / 1000, 0.04) : 0;
     previous = time;
-    if (time >= nextObstacleCheck) { refreshObstacles(); nextObstacleCheck = time + 250; moveClear(); }
+    if (time >= nextObstacleCheck) {
+      refreshObstacles();
+      nextObstacleCheck = time + 250;
+      moveClear();
+    }
     const limit = bounds();
-    x = Math.max(8, Math.min(x, limit.x)); y = Math.max(8, Math.min(y, limit.y));
+    x = Math.max(8, Math.min(x, limit.x));
+    y = Math.max(8, Math.min(y, limit.y));
     if (!target) target = destination(limit);
-    const dx = target.x - x, dy = target.y - y, distance = Math.hypot(dx, dy);
+    const dx = target.x - x,
+      dy = target.y - y,
+      distance = Math.hypot(dx, dy);
     const step = Math.min(distance, dt * 65);
     if (distance < 3) target = null;
     else {
-      const nx = x + dx / distance * step, ny = y + dy / distance * step;
+      const nx = x + (dx / distance) * step,
+        ny = y + (dy / distance) * step;
       if (blocked(nx, ny)) target = null;
-      else { x = nx; y = ny; }
+      else {
+        x = nx;
+        y = ny;
+      }
     }
-    draw(); spider.classList.add('is-crawling'); frame = requestAnimationFrame(tick);
+    draw();
+    spider.classList.add('is-crawling');
+    frame = requestAnimationFrame(tick);
   }
   function release() {
-    clearTimeout(releaseTimer); releaseTimer = null;
+    clearTimeout(releaseTimer);
+    releaseTimer = null;
     // Step clear of the pointer so the released spider can crawl again.
     if (!hugWithKeyboard) {
       const limit = bounds();
       x = Math.max(8, Math.min(limit.x, x + (x + 96 <= limit.x ? 96 : -96)));
-      hovering = false; keyboardFocus = false; target = null; draw();
+      hovering = false;
+      keyboardFocus = false;
+      target = null;
+      draw();
     }
-    hug.hidden = true; hugging = false; spider.classList.remove('is-hugging');
-    status.textContent = ''; sync();
+    hug.hidden = true;
+    hugging = false;
+    spider.classList.remove('is-hugging');
+    status.textContent = '';
+    sync();
   }
   function sync() {
     spider.hidden = !enabled();
     spider.classList.toggle('is-resting', paused());
-    spider.title = paused() ? 'Nhện đang nghỉ · bật chuyển động ở thanh trên để nhện bò' : 'Chạm nhện để được ôm';
+    spider.title = paused()
+      ? 'Nhện đang nghỉ · bật chuyển động ở thanh trên để nhện bò'
+      : 'Chạm nhện để được ôm';
     if (!enabled()) {
-      stop(); clearTimeout(releaseTimer); clearTimeout(hoverTimer); releaseTimer = null;
-      hovering = false; keyboardFocus = false;
-      hug.hidden = true; hugging = false; spider.classList.remove('is-hugging'); status.textContent = ''; return;
+      stop();
+      clearTimeout(releaseTimer);
+      clearTimeout(hoverTimer);
+      releaseTimer = null;
+      hovering = false;
+      keyboardFocus = false;
+      hug.hidden = true;
+      hugging = false;
+      spider.classList.remove('is-hugging');
+      status.textContent = '';
+      return;
     }
-    const limit = bounds(); x = Math.max(8, Math.min(x, limit.x)); y = Math.max(8, Math.min(y, limit.y));
-    refreshObstacles(); moveClear(); draw();
+    const limit = bounds();
+    x = Math.max(8, Math.min(x, limit.x));
+    y = Math.max(8, Math.min(y, limit.y));
+    refreshObstacles();
+    moveClear();
+    draw();
     if (paused() || hugging || hovering || keyboardFocus) stop();
     else if (frame === null) frame = requestAnimationFrame(tick);
     if (hugging && paused()) hug.classList.add('is-still');
   }
-  spider.addEventListener('pointerenter', event => {
+  spider.addEventListener('pointerenter', (event) => {
     if (event.pointerType === 'touch') return;
-    clearTimeout(hoverTimer); hovering = true; sync();
-    hoverTimer = setTimeout(() => { hovering = false; sync(); }, 1200);
+    clearTimeout(hoverTimer);
+    hovering = true;
+    sync();
+    hoverTimer = setTimeout(() => {
+      hovering = false;
+      sync();
+    }, 1200);
   });
-  spider.addEventListener('pointerleave', () => { clearTimeout(hoverTimer); hovering = false; sync(); });
-  spider.addEventListener('focus', () => { keyboardFocus = spider.matches(':focus-visible'); sync(); });
-  spider.addEventListener('blur', () => { keyboardFocus = false; sync(); });
-  spider.addEventListener('click', event => {
+  spider.addEventListener('pointerleave', () => {
+    clearTimeout(hoverTimer);
+    hovering = false;
+    sync();
+  });
+  spider.addEventListener('focus', () => {
+    keyboardFocus = spider.matches(':focus-visible');
+    sync();
+  });
+  spider.addEventListener('blur', () => {
+    keyboardFocus = false;
+    sync();
+  });
+  spider.addEventListener('click', (event) => {
     if (!enabled() || hugging) return;
     hugWithKeyboard = event.detail === 0;
-    hugging = true; stop();
+    hugging = true;
+    stop();
     hug.style.setProperty('--hug-x', `${x + spider.offsetWidth / 2 - innerWidth / 2}px`);
     hug.style.setProperty('--hug-y', `${y + spider.offsetHeight / 2 - innerHeight / 2}px`);
     hug.classList.toggle('is-still', paused());
-    spider.classList.add('is-hugging'); hug.hidden = false;
+    spider.classList.add('is-hugging');
+    hug.hidden = false;
     status.textContent = 'Nhện gửi bạn một cái ôm Halloween!';
     releaseTimer = setTimeout(release, paused() ? 1800 : 3400);
   });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && hugging) release(); });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && hugging) release();
+  });
   document.addEventListener('visibilitychange', sync);
-  window.addEventListener('resize', () => { target = null; sync(); });
+  window.addEventListener('resize', () => {
+    target = null;
+    sync();
+  });
   reduced.addEventListener('change', sync);
   const observer = new MutationObserver(sync);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   const view = document.querySelector('#view-content');
-  if (view) observer.observe(view, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
-  draw(); sync();
+  if (view)
+    observer.observe(view, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['hidden'],
+    });
+  draw();
+  sync();
 });

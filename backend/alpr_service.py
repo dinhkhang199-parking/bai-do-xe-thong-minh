@@ -7,15 +7,25 @@ from pathlib import Path
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 os.environ.setdefault("PADDLEOCR_HOME", str(Path.home() / ".paddleocr"))
 
-from backend.config import DEFAULT_MODEL_LABEL, DEEP_OCR_CONFIDENCE_THRESHOLD, ENABLE_DEEP_OCR_RETRY, ENABLE_OPENAI_VISION, ENABLE_PADDLE_FALLBACK, ENABLE_PADDLE_OCR, ENABLE_VISION_IN_AUTO, FAST_MODE, OCR_ACCURACY_MODE
+from backend.config import (
+    DEEP_OCR_CONFIDENCE_THRESHOLD,
+    DEFAULT_MODEL_LABEL,
+    ENABLE_DEEP_OCR_RETRY,
+    ENABLE_OPENAI_VISION,
+    ENABLE_PADDLE_FALLBACK,
+    ENABLE_PADDLE_OCR,
+    ENABLE_VISION_IN_AUTO,
+    FAST_MODE,
+    OCR_ACCURACY_MODE,
+)
 from backend.ocr_quality import assess_ocr_quality, clamp_confidence
 from backend.plate_format import (
     format_confirmed_plate,
     is_top_only_plate,
     looks_like_vn_bottom,
     looks_like_vn_top,
-    normalize_plate_text,
     normalize_generic_plate_text,
+    normalize_plate_text,
     normalize_vn_top,
 )
 from backend.storage import save_annotated_image
@@ -49,8 +59,11 @@ def _vision_enabled(auto: bool = False) -> bool:
         except Exception:
             settings = None
         if settings is not None:
-            return bool(getattr(settings, "enabled", False)) and (bool(getattr(settings, "in_auto", False)) or not auto)
+            return bool(getattr(settings, "enabled", False)) and (
+                bool(getattr(settings, "in_auto", False)) or not auto
+            )
     return bool(ENABLE_OPENAI_VISION) and (bool(ENABLE_VISION_IN_AUTO) or not auto)
+
 
 try:
     import site
@@ -72,7 +85,12 @@ except Exception:
 
 def repair_vn_top(text: str):
     s = normalize_vn_top(text)
-    if re.fullmatch(r"\d{2}[A-Z]", s) or re.fullmatch(r"\d{2}[A-Z]{2}", s) or re.fullmatch(r"\d{2}[A-Z]\d", s) or re.fullmatch(r"\d{2}[A-Z]{2}\d", s):
+    if (
+        re.fullmatch(r"\d{2}[A-Z]", s)
+        or re.fullmatch(r"\d{2}[A-Z]{2}", s)
+        or re.fullmatch(r"\d{2}[A-Z]\d", s)
+        or re.fullmatch(r"\d{2}[A-Z]{2}\d", s)
+    ):
         return s
     if len(s) >= 3 and s[:2].isdigit():
         tail = s[2:]
@@ -82,7 +100,12 @@ def repair_vn_top(text: str):
         fix_map = {"8": "B", "6": "G", "0": "D", "2": "Z", "5": "S"}
         fixed = fix_map.get(first, first)
         candidate = s[:2] + fixed + tail[1:]
-        if re.fullmatch(r"\d{2}[A-Z]", candidate) or re.fullmatch(r"\d{2}[A-Z]{2}", candidate) or re.fullmatch(r"\d{2}[A-Z]\d", candidate) or re.fullmatch(r"\d{2}[A-Z]{2}\d", candidate):
+        if (
+            re.fullmatch(r"\d{2}[A-Z]", candidate)
+            or re.fullmatch(r"\d{2}[A-Z]{2}", candidate)
+            or re.fullmatch(r"\d{2}[A-Z]\d", candidate)
+            or re.fullmatch(r"\d{2}[A-Z]{2}\d", candidate)
+        ):
             return candidate
     return s
 
@@ -129,8 +152,6 @@ def score_full_plate(text: str, conf: float):
     return score
 
 
-
-
 class _ConflictingReadings(Exception):
     def __init__(self, readings):
         self.readings = tuple(readings)
@@ -139,6 +160,7 @@ class _ConflictingReadings(Exception):
 @dataclass(frozen=True)
 class _LocalOcrConflict:
     """The fast-alpr OCR interface with explicit disagreement evidence."""
+
     candidates: tuple
     text: str = ""
     confidence: float = 0.0
@@ -149,7 +171,9 @@ class _LocalOcrConflict:
 
 def _select_local_reading(readings):
     readings = [(text, clamp_confidence(conf)) for text, conf in readings if text]
-    identities = {normalize_generic_plate_text(text) for text, _ in readings if format_confirmed_plate(text)}
+    identities = {
+        normalize_generic_plate_text(text) for text, _ in readings if format_confirmed_plate(text)
+    }
     if len(identities) > 1:
         raise _ConflictingReadings(readings)
     if identities:
@@ -180,10 +204,18 @@ class EasyOCRVNOCR(BaseOCR):
         if FAST_MODE and not force_full:
             return [("clahe", clahe)]
         _, otsu = cv2.threshold(clahe, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        adaptive = cv2.adaptiveThreshold(clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 9)
+        adaptive = cv2.adaptiveThreshold(
+            clahe, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 9
+        )
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
         morph = cv2.morphologyEx(otsu, cv2.MORPH_CLOSE, kernel)
-        return [("clahe", clahe), ("otsu", otsu), ("adaptive", adaptive), ("morph", morph), ("sharp", sharp)]
+        return [
+            ("clahe", clahe),
+            ("otsu", otsu),
+            ("adaptive", adaptive),
+            ("morph", morph),
+            ("sharp", sharp),
+        ]
 
     def _ocr_candidates(self, image, force_full: bool = False):
         if image is None or image.size == 0:
@@ -206,7 +238,9 @@ class EasyOCRVNOCR(BaseOCR):
             except Exception:
                 rows = []
             if rows:
-                line_text = " ".join(item[1].strip() for item in rows if len(item) >= 3 and item[1].strip())
+                line_text = " ".join(
+                    item[1].strip() for item in rows if len(item) >= 3 and item[1].strip()
+                )
                 if line_text:
                     # A confident top row must not hide an unreadable bottom row.
                     line_conf = min(clamp_confidence(item[2]) for item in rows if len(item) >= 3)
@@ -257,10 +291,14 @@ class EasyOCRVNOCR(BaseOCR):
                 # '?' or replacing B/8 would hide uncertainty before validation.
                 combined = format_confirmed_plate(f"{t_text.strip()} {b_text.strip()}")
                 if combined:
-                    readings.append((combined, min(clamp_confidence(t_conf), clamp_confidence(b_conf))))
+                    readings.append(
+                        (combined, min(clamp_confidence(t_conf), clamp_confidence(b_conf)))
+                    )
         return _select_local_reading(readings)
 
-    def _needs_rescue_ocr(self, text: str, conf: float, ratio: float, has_bottom_rows: bool) -> bool:
+    def _needs_rescue_ocr(
+        self, text: str, conf: float, ratio: float, has_bottom_rows: bool
+    ) -> bool:
         assessment = assess_ocr_quality(text or "", conf)
         normalized_len = len(assessment.normalized_text or "")
         if not text:
@@ -269,7 +307,10 @@ class EasyOCRVNOCR(BaseOCR):
             return True
         if not assessment.is_usable:
             return True
-        if ratio < 2.2 and (has_bottom_rows or assessment.plate_type in {"vn_partial_top", "vn_partial_bottom", "unknown"}):
+        if ratio < 2.2 and (
+            has_bottom_rows
+            or assessment.plate_type in {"vn_partial_top", "vn_partial_bottom", "unknown"}
+        ):
             return True
         if normalized_len < 8:
             return True
@@ -289,24 +330,36 @@ class EasyOCRVNOCR(BaseOCR):
             text = format_confirmed_plate(text) or text
             return OcrResult(text=text, confidence=conf) if text else None
 
-        split_configs = [
-            (0.52, 0.34, 0.08),
-        ] if FAST_MODE and not force_full else [
-            (0.52, 0.34, 0.08),
-            (0.48, 0.30, 0.03),
-            (0.56, 0.38, 0.10),
-        ]
+        split_configs = (
+            [
+                (0.52, 0.34, 0.08),
+            ]
+            if FAST_MODE and not force_full
+            else [
+                (0.52, 0.34, 0.08),
+                (0.48, 0.30, 0.03),
+                (0.56, 0.38, 0.10),
+            ]
+        )
         combinations = []
         last_bottom_rows = []
         for top_ratio, overlap_ratio, top_trim in split_configs:
-            top, bottom = self._split_vertical_plate(cropped_plate, top_ratio=top_ratio, overlap_ratio=overlap_ratio, top_trim=top_trim)
+            top, bottom = self._split_vertical_plate(
+                cropped_plate, top_ratio=top_ratio, overlap_ratio=overlap_ratio, top_trim=top_trim
+            )
             top_rows = self._ocr_candidates(top, force_full=force_full)
             bottom_rows = self._ocr_candidates(bottom, force_full=force_full)
             last_bottom_rows = bottom_rows
             combined_text, combined_conf = self._combine_from_candidates(top_rows, bottom_rows)
             combinations.append((combined_text, combined_conf))
         best_combo = _select_local_reading(combinations)
-        if best_combo[0] and (force_full or not FAST_MODE or not self._needs_rescue_ocr(best_combo[0], best_combo[1], ratio, bool(last_bottom_rows))):
+        if best_combo[0] and (
+            force_full
+            or not FAST_MODE
+            or not self._needs_rescue_ocr(
+                best_combo[0], best_combo[1], ratio, bool(last_bottom_rows)
+            )
+        ):
             return OcrResult(text=best_combo[0], confidence=best_combo[1])
 
         full_text, full_conf = self._ocr_best(cropped_plate, force_full=force_full)
@@ -314,15 +367,37 @@ class EasyOCRVNOCR(BaseOCR):
         # Any completed alternative already observed remains evidence even if
         # another crop/full-frame reading scores higher.
         _select_local_reading([best_combo, (full_text, full_conf)])
-        if full_text and not (is_top_only_plate(full_text) and last_bottom_rows and any(looks_like_vn_bottom(t) for t, _ in last_bottom_rows[:4])):
-            if force_full or not FAST_MODE or not self._needs_rescue_ocr(full_text, full_conf, ratio, bool(last_bottom_rows)):
+        if full_text and not (
+            is_top_only_plate(full_text)
+            and last_bottom_rows
+            and any(looks_like_vn_bottom(t) for t, _ in last_bottom_rows[:4])
+        ):
+            if (
+                force_full
+                or not FAST_MODE
+                or not self._needs_rescue_ocr(full_text, full_conf, ratio, bool(last_bottom_rows))
+            ):
                 return OcrResult(text=full_text, confidence=full_conf)
 
-        top, bottom = self._split_vertical_plate(cropped_plate, top_ratio=0.50, overlap_ratio=0.28, top_trim=0.0)
-        extra_top_rows = self._ocr_candidates(top, force_full=force_full) + self._ocr_candidates(cv2.resize(top, None, fx=1.3, fy=1.3, interpolation=cv2.INTER_CUBIC), force_full=force_full)
-        extra_bottom_rows = self._ocr_candidates(bottom, force_full=force_full) + self._ocr_candidates(cv2.resize(bottom, None, fx=1.4, fy=1.4, interpolation=cv2.INTER_CUBIC), force_full=force_full)
-        combined_text, combined_conf = self._combine_from_candidates(extra_top_rows, extra_bottom_rows)
-        selected_text, selected_conf = _select_local_reading([best_combo, (full_text, full_conf), (combined_text, combined_conf)])
+        top, bottom = self._split_vertical_plate(
+            cropped_plate, top_ratio=0.50, overlap_ratio=0.28, top_trim=0.0
+        )
+        extra_top_rows = self._ocr_candidates(top, force_full=force_full) + self._ocr_candidates(
+            cv2.resize(top, None, fx=1.3, fy=1.3, interpolation=cv2.INTER_CUBIC),
+            force_full=force_full,
+        )
+        extra_bottom_rows = self._ocr_candidates(
+            bottom, force_full=force_full
+        ) + self._ocr_candidates(
+            cv2.resize(bottom, None, fx=1.4, fy=1.4, interpolation=cv2.INTER_CUBIC),
+            force_full=force_full,
+        )
+        combined_text, combined_conf = self._combine_from_candidates(
+            extra_top_rows, extra_bottom_rows
+        )
+        selected_text, selected_conf = _select_local_reading(
+            [best_combo, (full_text, full_conf), (combined_text, combined_conf)]
+        )
         return OcrResult(text=selected_text, confidence=selected_conf) if selected_text else None
 
     def _result_payload_score(self, result, ratio: float = 0.0) -> tuple[int, float, int]:
@@ -332,7 +407,11 @@ class EasyOCRVNOCR(BaseOCR):
         conf = float(getattr(result, "confidence", 0.0) or 0.0)
         assessment = assess_ocr_quality(text, conf)
         penalty = 1 if self._needs_rescue_ocr(text, conf, ratio, False) else 0
-        return (1 if assessment.is_usable else 0, conf - penalty, len(assessment.normalized_text or text))
+        return (
+            1 if assessment.is_usable else 0,
+            conf - penalty,
+            len(assessment.normalized_text or text),
+        )
 
     def predict(self, cropped_plate):
         try:
@@ -349,12 +428,26 @@ class EasyOCRVNOCR(BaseOCR):
         if not ENABLE_DEEP_OCR_RETRY or not FAST_MODE:
             return fast_result
         fast_text = getattr(fast_result, "text", "") if fast_result is not None else ""
-        fast_conf = float(getattr(fast_result, "confidence", 0.0) or 0.0) if fast_result is not None else 0.0
+        fast_conf = (
+            float(getattr(fast_result, "confidence", 0.0) or 0.0)
+            if fast_result is not None
+            else 0.0
+        )
         if not self._needs_rescue_ocr(fast_text, fast_conf, ratio, False):
             return fast_result
         deep_result = self._predict_core(cropped_plate, force_full=True)
-        _select_local_reading([(item.text, item.confidence) for item in (fast_result, deep_result) if item is not None])
-        return max([item for item in [fast_result, deep_result] if item is not None], key=lambda item: self._result_payload_score(item, ratio), default=fast_result)
+        _select_local_reading(
+            [
+                (item.text, item.confidence)
+                for item in (fast_result, deep_result)
+                if item is not None
+            ]
+        )
+        return max(
+            [item for item in [fast_result, deep_result] if item is not None],
+            key=lambda item: self._result_payload_score(item, ratio),
+            default=fast_result,
+        )
 
 
 def get_detector_choices(external_model_dir: Path):
@@ -370,7 +463,9 @@ _PADDLE_OCR_READER = None
 
 def _score_ocr_payload(payload: dict) -> tuple[int, float, int]:
     text = (payload.get("text") or "").strip()
-    assessment = assess_ocr_quality(text or payload.get("raw_text") or "", float(payload.get("confidence", 0.0) or 0.0))
+    assessment = assess_ocr_quality(
+        text or payload.get("raw_text") or "", float(payload.get("confidence", 0.0) or 0.0)
+    )
     return (
         1 if assessment.is_usable else 0,
         float(payload.get("confidence", 0.0) or 0.0),
@@ -384,10 +479,16 @@ def _build_candidate_payload(result) -> dict | None:
     if ocr is None:
         return None
     if getattr(ocr, "ocr_disagreement", False):
-        return {"text": "", "raw_text": "", "confidence": 0.0, "is_usable": False,
-                "review_required": True, "ocr_disagreement": True,
-                "candidates": list(getattr(ocr, "candidates", ())),
-                "quality_note": "Các lần đọc OCR không thống nhất; cần đối chiếu ảnh."}
+        return {
+            "text": "",
+            "raw_text": "",
+            "confidence": 0.0,
+            "is_usable": False,
+            "review_required": True,
+            "ocr_disagreement": True,
+            "candidates": list(getattr(ocr, "candidates", ())),
+            "quality_note": "Các lần đọc OCR không thống nhất; cần đối chiếu ảnh.",
+        }
     raw_text = getattr(ocr, "text", "") or ""
     conf = clamp_confidence(getattr(ocr, "confidence", 0.0) or 0.0)
     formatted = format_confirmed_plate(raw_text) or raw_text
@@ -406,23 +507,34 @@ def _build_candidate_payload(result) -> dict | None:
         "text": formatted,
         "raw_text": raw_text,
         "confidence": conf,
-        "is_usable": assessment.is_usable and bool(format_confirmed_plate(raw_text)) and normalize_generic_plate_text(raw_text) == normalize_generic_plate_text(formatted),
+        "is_usable": assessment.is_usable
+        and bool(format_confirmed_plate(raw_text))
+        and normalize_generic_plate_text(raw_text) == normalize_generic_plate_text(formatted),
         "quality_note": assessment.quality_note,
         "normalized_text": assessment.normalized_text,
         "formatted_text": assessment.formatted_text,
         "plate_type": assessment.plate_type,
         "bbox": bbox,
-        "detector_confidence": float(getattr(detection, "confidence", 0.0) or 0.0) if detection is not None else 0.0,
+        "detector_confidence": float(getattr(detection, "confidence", 0.0) or 0.0)
+        if detection is not None
+        else 0.0,
     }
 
 
 def _is_good_enough(payload: dict | None) -> bool:
-    if not payload or payload.get("is_usable") is False or payload.get("ambiguous") or payload.get("ocr_disagreement"):
+    if (
+        not payload
+        or payload.get("is_usable") is False
+        or payload.get("ambiguous")
+        or payload.get("ocr_disagreement")
+    ):
         return False
     text = (payload.get("text") or "").strip()
     conf = float(payload.get("confidence", 0.0) or 0.0)
     assessment = assess_ocr_quality(text or payload.get("raw_text") or "", conf)
-    return bool(assessment.is_usable and len(assessment.normalized_text or text) >= 8 and conf >= 0.80)
+    return bool(
+        assessment.is_usable and len(assessment.normalized_text or text) >= 8 and conf >= 0.80
+    )
 
 
 def _get_paddle_reader():
@@ -456,13 +568,15 @@ def _run_openai_vision_payload(image_path: str, detector_label: str, annotated_p
     if not openai_payload:
         return None
     payload = dict(openai_payload)
-    payload.update({
-        "message": f"{detector_label} • OpenAI vision • {payload.get('quality_note', '')}",
-        "used_ocr": bool(payload.get("text")),
-        "annotated_path": annotated_path,
-        "detector_label": detector_label,
-        "ocr_engine": "openai-vision",
-    })
+    payload.update(
+        {
+            "message": f"{detector_label} • OpenAI vision • {payload.get('quality_note', '')}",
+            "used_ocr": bool(payload.get("text")),
+            "annotated_path": annotated_path,
+            "detector_label": detector_label,
+            "ocr_engine": "openai-vision",
+        }
+    )
     return payload
 
 
@@ -484,15 +598,24 @@ def _fusion_rank(payload: dict) -> tuple[int, float, int, int]:
     assessment = assess_ocr_quality(text, conf)
     engine = payload.get("ocr_engine") or payload.get("engine") or ""
     engine_bonus = 2 if engine == "openai-vision" else 1 if engine == "paddleocr" else 0
-    return (1 if assessment.is_usable else 0, score_full_plate(text, conf), len(assessment.normalized_text or text), engine_bonus)
+    return (
+        1 if assessment.is_usable else 0,
+        score_full_plate(text, conf),
+        len(assessment.normalized_text or text),
+        engine_bonus,
+    )
 
 
-def _fuse_ocr_candidates(candidates: list[dict | None], detector_label: str, annotated_path: str) -> dict | None:
+def _fuse_ocr_candidates(
+    candidates: list[dict | None], detector_label: str, annotated_path: str
+) -> dict | None:
     # Ambiguous scenes cannot be resolved by ranking an unrelated engine's guess.
     for item in candidates:
         if item and (item.get("ambiguous") or item.get("ocr_disagreement")):
             return dict(item)
-    payloads = [dict(item) for item in candidates if item and (item.get("text") or item.get("raw_text"))]
+    payloads = [
+        dict(item) for item in candidates if item and (item.get("text") or item.get("raw_text"))
+    ]
     if not payloads:
         return None
     for item in payloads:
@@ -502,8 +625,12 @@ def _fuse_ocr_candidates(candidates: list[dict | None], detector_label: str, ann
     identities = {_payload_identity(item) for item in payloads if _payload_identity(item)}
     selected = dict(selected)
     selected["candidates"] = payloads
-    selected["fusion_sources"] = [item.get("ocr_engine") or item.get("engine") or "unknown" for item in payloads]
-    selected["vision_disagreement"] = len(identities) > 1 and any((item.get("ocr_engine") == "openai-vision") for item in payloads)
+    selected["fusion_sources"] = [
+        item.get("ocr_engine") or item.get("engine") or "unknown" for item in payloads
+    ]
+    selected["vision_disagreement"] = len(identities) > 1 and any(
+        (item.get("ocr_engine") == "openai-vision") for item in payloads
+    )
     selected["ocr_disagreement"] = len(identities) > 1
     if selected["ocr_disagreement"]:
         selected["review_required"] = True
@@ -512,14 +639,20 @@ def _fuse_ocr_candidates(candidates: list[dict | None], detector_label: str, ann
         selected["message"] = f"{detector_label} • OCR fusion • bất đồng kết quả giữa các engine"
     else:
         selected["message"] = selected.get("message") or f"{detector_label} • OCR fusion"
-    selected["ocr_engine"] = "vision-fusion" if any(item.get("ocr_engine") == "openai-vision" for item in payloads) else selected.get("ocr_engine", "fusion")
+    selected["ocr_engine"] = (
+        "vision-fusion"
+        if any(item.get("ocr_engine") == "openai-vision" for item in payloads)
+        else selected.get("ocr_engine", "fusion")
+    )
     selected["used_ocr"] = bool(selected.get("text"))
     selected["annotated_path"] = annotated_path
     selected["detector_label"] = detector_label
     return selected
 
 
-def _prepare_vision_candidate(vision_payload: dict, detector_label: str, annotated_path: str) -> dict:
+def _prepare_vision_candidate(
+    vision_payload: dict, detector_label: str, annotated_path: str
+) -> dict:
     payload = dict(vision_payload or {})
     payload.setdefault("ocr_engine", "openai-vision")
     payload.setdefault("engine", "openai-vision")
@@ -584,12 +717,22 @@ def _run_paddle_ocr(image_path: str, detector_label: str, annotated_path: str):
     if not candidates:
         return None
 
-    full_candidates = {normalize_generic_plate_text(raw) for _, raw, _ in candidates if format_confirmed_plate(raw)}
+    full_candidates = {
+        normalize_generic_plate_text(raw) for _, raw, _ in candidates if format_confirmed_plate(raw)
+    }
     if len(full_candidates) > 1:
-        return {"text": "", "confidence": 0.0, "is_usable": False, "ambiguous": True,
-                "review_required": True, "plate_count": len(full_candidates), "ocr_engine": "paddleocr",
-                "annotated_path": annotated_path, "detector_label": detector_label,
-                "quality_note": "Có nhiều biển số; hãy chọn ảnh chỉ có một xe hoặc nhập tay sau khi đối chiếu."}
+        return {
+            "text": "",
+            "confidence": 0.0,
+            "is_usable": False,
+            "ambiguous": True,
+            "review_required": True,
+            "plate_count": len(full_candidates),
+            "ocr_engine": "paddleocr",
+            "annotated_path": annotated_path,
+            "detector_label": detector_label,
+            "quality_note": "Có nhiều biển số; hãy chọn ảnh chỉ có một xe hoặc nhập tay sau khi đối chiếu.",
+        }
 
     best_text, best_raw, best_conf = max(
         candidates,
@@ -647,7 +790,9 @@ def _load_runtime_frame(image_path: str):
     max_side = 1600 if FAST_MODE else 1920
     if longest_side > max_side:
         scale = max_side / float(longest_side)
-        frame = cv2.resize(frame, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(
+            frame, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA
+        )
     return frame
 
 
@@ -658,12 +803,16 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
     ai_status = None
     ai_error = None
     auto_vision_payload = None
+
     def fallback_result(payload):
         if ai_status is not None:
             payload = dict(payload)
             payload.update(ai_status=ai_status, ai_error=ai_error, review_required=True)
         return payload
-    vision_wanted = requested_engine == "openai-vision" or (requested_engine == "auto" and _vision_enabled(auto=True))
+
+    vision_wanted = requested_engine == "openai-vision" or (
+        requested_engine == "auto" and _vision_enabled(auto=True)
+    )
     vision_enabled_now = _vision_enabled(auto=(requested_engine == "auto"))
     if vision_wanted and run_openai_vision is not None and vision_enabled_now:
         try:
@@ -686,7 +835,14 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
             auto_vision_payload = vision_payload
 
     if cv2 is None:
-        result = {"text": "", "confidence": 0.0, "message": "OpenCV unavailable", "used_ocr": False, "annotated_path": image_path, "detector_label": detector_label}
+        result = {
+            "text": "",
+            "confidence": 0.0,
+            "message": "OpenCV unavailable",
+            "used_ocr": False,
+            "annotated_path": image_path,
+            "detector_label": detector_label,
+        }
         if ai_status is not None:
             result["ai_status"] = ai_status
             result["ai_error"] = ai_error
@@ -695,7 +851,16 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
 
     frame = _load_runtime_frame(image_path)
     if frame is None:
-        return fallback_result({"text": "", "confidence": 0.0, "message": "Invalid image", "used_ocr": False, "annotated_path": image_path, "detector_label": detector_label})
+        return fallback_result(
+            {
+                "text": "",
+                "confidence": 0.0,
+                "message": "Invalid image",
+                "used_ocr": False,
+                "annotated_path": image_path,
+                "detector_label": detector_label,
+            }
+        )
 
     alpr = load_fast_alpr(detector_model)
     results = []
@@ -719,17 +884,37 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
 
     fast_payload = None
     if results:
-        candidates = [payload for payload in (_build_candidate_payload(item) for item in results) if payload]
+        candidates = [
+            payload for payload in (_build_candidate_payload(item) for item in results) if payload
+        ]
         if len(results) > 1:
-            return fallback_result({"text": "", "confidence": 0.0, "is_usable": False,
-                "used_ocr": False, "ambiguous": True, "review_required": True, "plate_count": len(results),
-                "ocr_engine": "fast-alpr-easyocr", "candidates": candidates,
-                "annotated_path": annotated_path, "detector_label": detector_label,
-                "quality_note": "Có nhiều biển số; hãy chọn ảnh chỉ có một xe hoặc nhập tay sau khi đối chiếu."})
+            return fallback_result(
+                {
+                    "text": "",
+                    "confidence": 0.0,
+                    "is_usable": False,
+                    "used_ocr": False,
+                    "ambiguous": True,
+                    "review_required": True,
+                    "plate_count": len(results),
+                    "ocr_engine": "fast-alpr-easyocr",
+                    "candidates": candidates,
+                    "annotated_path": annotated_path,
+                    "detector_label": detector_label,
+                    "quality_note": "Có nhiều biển số; hãy chọn ảnh chỉ có một xe hoặc nhập tay sau khi đối chiếu.",
+                }
+            )
         conflict = next((item for item in candidates if item.get("ocr_disagreement")), None)
         if conflict:
-            return fallback_result(dict(conflict, used_ocr=False, annotated_path=annotated_path,
-                                        detector_label=detector_label, ocr_engine="fast-alpr-easyocr"))
+            return fallback_result(
+                dict(
+                    conflict,
+                    used_ocr=False,
+                    annotated_path=annotated_path,
+                    detector_label=detector_label,
+                    ocr_engine="fast-alpr-easyocr",
+                )
+            )
         best = max(candidates, key=_score_ocr_payload) if candidates else None
         if best:
             det_conf = float(best.get("detector_confidence", 0.0) or 0.0)
@@ -768,8 +953,12 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
             paddle_payload = _run_paddle_ocr(image_path, detector_label, annotated_path)
         vision_candidate = None
         if auto_vision_payload is not None:
-            vision_candidate = _prepare_vision_candidate(auto_vision_payload, detector_label, annotated_path)
-        fused_payload = _fuse_ocr_candidates([fast_payload, paddle_payload, vision_candidate], detector_label, annotated_path)
+            vision_candidate = _prepare_vision_candidate(
+                auto_vision_payload, detector_label, annotated_path
+            )
+        fused_payload = _fuse_ocr_candidates(
+            [fast_payload, paddle_payload, vision_candidate], detector_label, annotated_path
+        )
         if fused_payload:
             return fallback_result(fused_payload)
 
@@ -780,16 +969,17 @@ def run_alpr(image_path: str, detector_model: str | None = None, ocr_engine: str
         missing.append("easyocr")
     if PaddleOCR is None:
         missing.append("paddleocr")
-    return fallback_result({
-        "text": "",
-        "confidence": 0.0,
-        "message": (f"Thiếu {', '.join(missing)}" if missing else "OCR failed"),
-        "used_ocr": False,
-        "annotated_path": annotated_path,
-        "detector_label": detector_label,
-        "raw_text": "",
-        "is_usable": False,
-        "quality_note": "Không có kết quả OCR",
-        "ocr_engine": "unavailable",
-    })
-
+    return fallback_result(
+        {
+            "text": "",
+            "confidence": 0.0,
+            "message": (f"Thiếu {', '.join(missing)}" if missing else "OCR failed"),
+            "used_ocr": False,
+            "annotated_path": annotated_path,
+            "detector_label": detector_label,
+            "raw_text": "",
+            "is_usable": False,
+            "quality_note": "Không có kết quả OCR",
+            "ocr_engine": "unavailable",
+        }
+    )

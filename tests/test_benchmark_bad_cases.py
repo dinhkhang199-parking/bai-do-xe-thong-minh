@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.benchmark
-
-
 from scripts import benchmark_bad_cases
+
+pytestmark = pytest.mark.benchmark
 
 
 def test_bad_case_benchmark_uses_configured_upload_dir(monkeypatch, tmp_path):

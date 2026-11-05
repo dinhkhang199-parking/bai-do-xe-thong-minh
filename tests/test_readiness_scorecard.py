@@ -5,10 +5,15 @@ from api.main import app
 
 def test_readiness_and_scorecard_endpoints(monkeypatch):
     import api.main as api
-    monkeypatch.setattr(api, 'runtime_readiness', lambda: [
-        {'name':'database','status':'ok','detail':'Fixture database'},
-        {'name':'api_parity','status':'implemented','detail':'Fixture routes'},
-    ])
+
+    monkeypatch.setattr(
+        api,
+        "runtime_readiness",
+        lambda: [
+            {"name": "database", "status": "ok", "detail": "Fixture database"},
+            {"name": "api_parity", "status": "implemented", "detail": "Fixture routes"},
+        ],
+    )
     client = TestClient(app)
 
     readiness = client.get("/readiness")
@@ -20,7 +25,10 @@ def test_readiness_and_scorecard_endpoints(monkeypatch):
     assert scorecard.status_code == 200
     payload = scorecard.json()
     assert payload["overall_score"] is None
-    assert any(item['criterion'] == 'Testing' and item['status'] == 'not_measured' for item in payload['items'])
+    assert any(
+        item["criterion"] == "Testing" and item["status"] == "not_measured"
+        for item in payload["items"]
+    )
 
 
 def test_openapi_contains_response_models():

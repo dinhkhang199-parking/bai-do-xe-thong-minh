@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.benchmark
-
-
 from scripts import generate_benchmark_candidates
+
+pytestmark = pytest.mark.benchmark
 
 
 def test_generate_candidates_uses_repo_relative_output(monkeypatch, tmp_path):

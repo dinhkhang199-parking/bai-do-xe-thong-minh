@@ -1,13 +1,10 @@
-from pathlib import Path
 import sqlite3
-import sys
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
-
 from backend.db import append_audit_log, apply_migrations, fetch_audit_logs
+
+pytestmark = pytest.mark.integration
 
 
 def test_apply_migrations_creates_schema_version(tmp_path):
@@ -15,7 +12,9 @@ def test_apply_migrations_creates_schema_version(tmp_path):
     apply_migrations(db_path)
 
     conn = sqlite3.connect(db_path)
-    row = conn.execute("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1").fetchone()
+    row = conn.execute(
+        "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1"
+    ).fetchone()
     conn.close()
 
     assert row is not None
@@ -61,20 +60,31 @@ def test_apply_migrations_migrates_legacy_schema(tmp_path):
         )
         """
     )
-    conn.execute("INSERT INTO app_users(username, password_hash, role) VALUES (?, ?, ?)", ("operator", "hash", "operator"))
+    conn.execute(
+        "INSERT INTO app_users(username, password_hash, role) VALUES (?, ?, ?)",
+        ("operator", "hash", "operator"),
+    )
     conn.commit()
     conn.close()
 
     apply_migrations(db_path)
 
     conn = sqlite3.connect(db_path)
-    parking_columns = {row[1] for row in conn.execute("PRAGMA table_info('parking_logs')").fetchall()}
+    parking_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info('parking_logs')").fetchall()
+    }
     user_columns = {row[1] for row in conn.execute("PRAGMA table_info('app_users')").fetchall()}
-    migrated_confidence = conn.execute("SELECT entry_ocr_confidence FROM parking_logs WHERE ticket_id = 'T1'").fetchone()[0]
-    is_active = conn.execute("SELECT is_active FROM app_users WHERE username = 'operator'").fetchone()[0]
+    migrated_confidence = conn.execute(
+        "SELECT entry_ocr_confidence FROM parking_logs WHERE ticket_id = 'T1'"
+    ).fetchone()[0]
+    is_active = conn.execute(
+        "SELECT is_active FROM app_users WHERE username = 'operator'"
+    ).fetchone()[0]
     conn.close()
 
-    assert {"entry_ocr_engine", "exit_ocr_engine", "entry_ocr_text", "exit_ocr_text"}.issubset(parking_columns)
+    assert {"entry_ocr_engine", "exit_ocr_engine", "entry_ocr_text", "exit_ocr_text"}.issubset(
+        parking_columns
+    )
     assert "is_active" in user_columns
     assert migrated_confidence == 0.87
     assert is_active == 1
@@ -119,14 +129,30 @@ def test_apply_migrations_creates_audit_logs_table(tmp_path):
     conn.close()
 
     column_names = {row[1] for row in rows}
-    assert {"actor_username", "actor_role", "action", "target_type", "target_id", "details_json", "created_at"}.issubset(column_names)
+    assert {
+        "actor_username",
+        "actor_role",
+        "action",
+        "target_type",
+        "target_id",
+        "details_json",
+        "created_at",
+    }.issubset(column_names)
 
 
 def test_append_and_fetch_audit_logs(tmp_path):
     db_path = tmp_path / "schema.db"
     apply_migrations(db_path)
 
-    ok = append_audit_log("admin", "admin", "user_created", target_type="app_user", target_id="operator01", details_json='{"role":"operator"}', db_path=db_path)
+    ok = append_audit_log(
+        "admin",
+        "admin",
+        "user_created",
+        target_type="app_user",
+        target_id="operator01",
+        details_json='{"role":"operator"}',
+        db_path=db_path,
+    )
     assert ok is True
 
     df = fetch_audit_logs(db_path)

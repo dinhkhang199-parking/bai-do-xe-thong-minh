@@ -10,7 +10,9 @@ from backend.alpr_service import run_alpr
 from backend.config import BENCHMARK_UPLOADS_DIR, REPORT_DIR
 
 DATASET_CSV = ROOT / "data" / "benchmark" / "datasets" / "benchmark_dataset.csv"
-OUT_CSV = ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+OUT_CSV = (
+    ROOT / "data" / "benchmark" / "ground_truth" / "benchmark_dataset_ground_truth_template.csv"
+)
 PREVIEW_MD = REPORT_DIR / "benchmark_ground_truth_preview.md"
 
 
@@ -19,7 +21,12 @@ def main():
         raise SystemExit(f"Missing dataset file: {DATASET_CSV}")
 
     rows = []
-    preview_lines = ["# Benchmark Ground Truth Preview", "", "Dùng file CSV để điền `expected_plate` chuẩn cho từng ảnh.", ""]
+    preview_lines = [
+        "# Benchmark Ground Truth Preview",
+        "",
+        "Dùng file CSV để điền `expected_plate` chuẩn cho từng ảnh.",
+        "",
+    ]
 
     with DATASET_CSV.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
@@ -58,7 +65,9 @@ def main():
             )
 
     with OUT_CSV.open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["file", "expected_plate", "ocr_suggestion", "label", "notes"])
+        writer = csv.DictWriter(
+            f, fieldnames=["file", "expected_plate", "ocr_suggestion", "label", "notes"]
+        )
         writer.writeheader()
         writer.writerows(rows)
 

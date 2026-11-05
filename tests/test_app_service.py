@@ -43,7 +43,9 @@ def test_confirm_vehicle_entry_validates_before_saving(monkeypatch):
     monkeypatch.setattr(app_service, "validate_plate_text", fake_validate_plate_text)
     monkeypatch.setattr(app_service, "vehicle_entry", fake_vehicle_entry)
 
-    result = app_service.confirm_vehicle_entry("66b106999", image_path="img.jpg", ocr_text="66B106999", manual_override=True)
+    result = app_service.confirm_vehicle_entry(
+        "66b106999", image_path="img.jpg", ocr_text="66B106999", manual_override=True
+    )
 
     assert result["success"] is True
     assert called["validated"] == "66b106999"
@@ -96,7 +98,14 @@ def test_confirm_vehicle_exit_preserves_manual_override_payload(monkeypatch):
 
     monkeypatch.setattr(app_service, "vehicle_exit", fake_vehicle_exit)
 
-    result = app_service.confirm_vehicle_exit(" ticket-9 ", "manual override", image_path="exit.jpg", ocr_confidence=0.42, ocr_text="67B112345", manual_override=True)
+    result = app_service.confirm_vehicle_exit(
+        " ticket-9 ",
+        "manual override",
+        image_path="exit.jpg",
+        ocr_confidence=0.42,
+        ocr_text="67B112345",
+        manual_override=True,
+    )
 
     assert result["match_result"] == "MISMATCH"
     assert called["args"][:2] == ("TICKET-9", "67-B1 123.45")

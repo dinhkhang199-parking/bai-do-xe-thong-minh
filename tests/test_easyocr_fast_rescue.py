@@ -1,9 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.ocr
-
-
 from backend.alpr_service import EasyOCRVNOCR
+
+pytestmark = pytest.mark.ocr
 
 
 def test_needs_rescue_for_empty_text():

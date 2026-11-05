@@ -11,10 +11,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from backend.alpr_service import run_alpr
+from backend.benchmarking import plate_key as normalize_plate_text
 from backend.config import ENABLE_PADDLE_OCR, REPORT_DIR
 from backend.paddle_ocr_adapter import run_paddleocr
 from scripts.benchmark_common import DATASET_CSV, iter_dataset_rows, resolve_benchmark_uploads_dir
-from backend.benchmarking import plate_key as normalize_plate_text
 
 RESULTS_CSV = REPORT_DIR / "ocr_engine_comparison.csv"
 SUMMARY_TXT = REPORT_DIR / "ocr_engine_comparison_summary.txt"
@@ -55,26 +55,33 @@ def main():
         easy = run_alpr(str(image_path))
         easy_text, easy_usable, easy_exact = evaluate_result("easy", easy, expected_plate, counters)
 
-        paddle = {"text": "", "confidence": 0.0, "is_usable": False, "quality_note": "PaddleOCR disabled"}
+        paddle = {
+            "text": "",
+            "confidence": 0.0,
+            "is_usable": False,
+            "quality_note": "PaddleOCR disabled",
+        }
         if ENABLE_PADDLE_OCR:
             paddle = run_paddleocr(str(image_path))
-        paddle_text, paddle_usable, paddle_exact = evaluate_result("paddle", paddle, expected_plate, counters)
+        paddle_text, paddle_usable, paddle_exact = evaluate_result(
+            "paddle", paddle, expected_plate, counters
+        )
 
         rows.append(
             {
-                    "file": file_name,
-                    "label": label,
-                    "expected_plate": expected_plate,
-                    "easy_text": easy_text,
-                    "easy_confidence": easy.get("confidence", 0.0),
-                    "easy_usable": easy_usable,
-                    "easy_exact": easy_exact,
-                    "easy_quality_note": easy.get("quality_note", ""),
-                    "paddle_text": paddle_text,
-                    "paddle_confidence": paddle.get("confidence", 0.0),
-                    "paddle_usable": paddle_usable,
-                    "paddle_exact": paddle_exact,
-                    "paddle_quality_note": paddle.get("quality_note", ""),
+                "file": file_name,
+                "label": label,
+                "expected_plate": expected_plate,
+                "easy_text": easy_text,
+                "easy_confidence": easy.get("confidence", 0.0),
+                "easy_usable": easy_usable,
+                "easy_exact": easy_exact,
+                "easy_quality_note": easy.get("quality_note", ""),
+                "paddle_text": paddle_text,
+                "paddle_confidence": paddle.get("confidence", 0.0),
+                "paddle_usable": paddle_usable,
+                "paddle_exact": paddle_exact,
+                "paddle_quality_note": paddle.get("quality_note", ""),
             }
         )
 

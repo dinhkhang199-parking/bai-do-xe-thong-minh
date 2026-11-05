@@ -1,13 +1,19 @@
 import base64
 import re
-from io import BytesIO
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
-from backend.config import UPLOAD_DIR
-from backend.validators import ValidationError, MAX_UPLOAD_SIZE_BYTES, validate_image_extension, validate_upload_size
 from PIL import Image
+
+from backend.config import UPLOAD_DIR
+from backend.validators import (
+    MAX_UPLOAD_SIZE_BYTES,
+    ValidationError,
+    validate_image_extension,
+    validate_upload_size,
+)
 
 try:
     import cv2
@@ -20,7 +26,10 @@ MAX_UPLOAD_PIXELS = 20_000_000
 def _timestamped_path(prefix: str, suffix: str) -> Path:
     safe_prefix = re.sub(r"[^A-Za-z0-9_-]+", "_", (prefix or "file").strip())
     safe_prefix = safe_prefix[:20].strip("_") or "file"
-    return UPLOAD_DIR / f"{safe_prefix}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:16]}{suffix}"
+    return (
+        UPLOAD_DIR
+        / f"{safe_prefix}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid4().hex[:16]}{suffix}"
+    )
 
 
 def _maybe_resize_for_ocr(buffer: bytes, suffix: str) -> bytes:
@@ -75,4 +84,3 @@ def image_to_base64(path: Path):
     if not path.exists():
         return ""
     return base64.b64encode(path.read_bytes()).decode("utf-8")
-

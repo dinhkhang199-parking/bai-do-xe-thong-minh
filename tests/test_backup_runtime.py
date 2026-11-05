@@ -1,15 +1,12 @@
-from pathlib import Path
 import json
 import sqlite3
-import sys
 from zipfile import ZipFile
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
-
 from scripts.backup_runtime import create_runtime_backup
+
+pytestmark = pytest.mark.integration
 
 
 def test_create_runtime_backup_includes_db_uploads_and_manifest(tmp_path):
